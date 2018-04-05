@@ -1,6 +1,8 @@
 #ifndef JAVACOMPILER_FIELD_H
 #define JAVACOMPILER_FIELD_H
+
 class Field {
 
 };
+
 #endif //JAVACOMPILER_FIELD_H

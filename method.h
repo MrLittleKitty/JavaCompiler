@@ -5,8 +5,9 @@
 #include "instruction.h"
 
 class Method {
-    private:
-        Qualifier qualifiers[];
-        Instruction instructions[];
+private:
+    std::vector<Qualifier> qualifiers;
+    std::vector<Instruction> instructions;
 };
+
 #endif //JAVACOMPILER_METHOD_H

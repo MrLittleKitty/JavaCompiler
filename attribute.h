@@ -1,6 +1,8 @@
 #ifndef JAVACOMPILER_ATTRIBUTE_H
 #define JAVACOMPILER_ATTRIBUTE_H
-class Attribute{
+
+class Attribute {
 
 };
+
 #endif //JAVACOMPILER_ATTRIBUTE_H

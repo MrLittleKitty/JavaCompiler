@@ -6,10 +6,11 @@
 #include "method.h"
 
 class Class {
-    private:
-        Method methods[];
-        Field fields[];
-        Attribute attributes[];
-        Class superclasses[];
+private:
+    std::vector<Method> methods;
+    std::vector<Field> fields;
+    std::vector<Attribute> attributes;
+    std::vector<Class> superclasses;
 };
+
 #endif //JAVACOMPILER_CLASS_H

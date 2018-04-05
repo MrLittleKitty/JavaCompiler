@@ -1,6 +1,10 @@
 #include <iostream>
+#include "class.h"
+#include "parser.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+
+    Class* c = parseClassFile("Test1.class");
+
     return 0;
 }
