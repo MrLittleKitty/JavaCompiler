@@ -10,7 +10,8 @@ private:
     std::vector<Method> methods;
     std::vector<Field> fields;
     std::vector<Attribute> attributes;
-    std::vector<Class> superclasses;
+    Class superClass;
+    std::vector<Class> interfaces;
 };
 
 #endif //JAVACOMPILER_CLASS_H

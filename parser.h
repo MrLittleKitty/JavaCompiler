@@ -61,20 +61,22 @@ static bool checkVersion(vector<char> &bytes, int index) {
 static Class *parseClassFile(char const *fileName) {
 
     vector<char> byteCode = ReadAllBytes(fileName);
-
     int index = 0;
 
     if (!checkMagicNumber(byteCode, index))
         return nullptr;
-
     index += 4;
 
     if (!checkVersion(byteCode, index))
         return nullptr;
-
     index += 4;
 
-    for (; index < byteCode.size(); index++) {
+    unsigned short constantPoolEntries = pack16BitInteger(byteCode[index], byteCode[index + 1]);
+    index += 2;
+
+    for (int poolIndex = 1; poolIndex < constantPoolEntries; poolIndex++) {
+        unsigned char tag = (unsigned char)byteCode[index];
+
 
     }
 }
