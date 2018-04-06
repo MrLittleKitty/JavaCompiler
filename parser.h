@@ -3,6 +3,7 @@
 #include <fstream>
 #include <map>
 #include "class.h"
+
 #define C_Class 7
 #define C_Fieldref 9
 #define C_Methodref 10
@@ -31,20 +32,11 @@ struct String_info {
     unsigned short string_index;
 };
 
-struct Integer_info {
+struct Number_info {
     unsigned int bytes;
 };
 
-struct Float_info {
-    unsigned int bytes;
-};
-
-struct Long_info {
-    unsigned int high_bytes;
-    unsigned int low_bytes;
-};
-
-struct Double_info {
+struct BigNumber_info {
     unsigned int high_bytes;
     unsigned int low_bytes;
 };
@@ -54,17 +46,17 @@ struct NameAndType_info {
     unsigned short descriptor_index;
 };
 
-map<int, Class_info*> classMap;
-map<int, Ref_info*> fieldRefMap;
-map<int, Ref_info*> methodRefMap;
-map<int, Ref_info*> interfaceMethodRefMap;
-map<int, String_info*> stringInfoMap;
-map<int, Integer_info*> integerMap;
-map<int, Float_info*> floatMap;
-map<int, Long_info*> longMap;
-map<int, Double_info*> doubleMap;
-map<int, NameAndType_info*> nameAndTypeMap;
-map<int, char*> stringMap;
+map<int, Class_info *> classMap;
+map<int, Ref_info *> fieldRefMap;
+map<int, Ref_info *> methodRefMap;
+map<int, Ref_info *> interfaceMethodRefMap;
+map<int, String_info *> stringInfoMap;
+map<int, Number_info *> integerMap;
+map<int, Number_info *> floatMap;
+map<int, BigNumber_info *> longMap;
+map<int, BigNumber_info *> doubleMap;
+map<int, NameAndType_info *> nameAndTypeMap;
+map<int, string> stringMap;
 
 
 static unsigned short pack16BitInteger(unsigned char upper, unsigned char lower) {
@@ -87,25 +79,25 @@ static unsigned int pack32BitInteger(unsigned char upper1, unsigned char upper2,
 }
 
 static int getSizeFromTag(unsigned char tag) {
-    if(tag == C_Class)
+    if (tag == C_Class)
         return 2;
-    else if(tag == C_Fieldref)
+    else if (tag == C_Fieldref)
         return 4;
-    else if(tag == C_Methodref)
+    else if (tag == C_Methodref)
         return 4;
-    else if(tag == C_InterfaceMethodRef)
+    else if (tag == C_InterfaceMethodRef)
         return 4;
-    else if(tag == C_String)
+    else if (tag == C_String)
         return 2;
-    else if(tag == C_Integer)
+    else if (tag == C_Integer)
         return 4;
-    else if(tag == C_Float)
+    else if (tag == C_Float)
         return 4;
-    else if(tag == C_Long)
+    else if (tag == C_Long)
         return 8;
-    else if(tag == C_Double)
+    else if (tag == C_Double)
         return 8;
-    else if(tag == C_NameAndType)
+    else if (tag == C_NameAndType)
         return 4;
     else return 0;
 }
@@ -144,46 +136,132 @@ static bool checkVersion(vector<char> &bytes, int index) {
     return majorVersion >= 50; //50 is Java 6.0
 }
 
+static void parseConstantPoolEntry(vector<char> &bytes, int index, unsigned char tag, int poolIndex) {
+    if (tag == C_Class) {
+        Class_info *info = new Class_info;
+        info->name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+        classMap[poolIndex] = info;
+    } else if (tag == C_Fieldref || tag == C_Methodref || tag == C_InterfaceMethodRef) {
+        Ref_info *info = new Ref_info;
+        info->class_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+        info->name_and_type_index = pack16BitInteger(bytes[index + 2], bytes[index + 3]);
+
+        if (tag == C_Fieldref)
+            fieldRefMap[poolIndex] = info;
+        else if (tag == C_Methodref)
+            methodRefMap[poolIndex] = info;
+        else
+            interfaceMethodRefMap[poolIndex] = info;
+    } else if (tag == C_String) {
+        String_info *info = new String_info;
+        info->string_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+        stringInfoMap[poolIndex] = info;
+    } else if (tag == C_Integer || tag == C_Float) {
+        Number_info *info = new Number_info;
+        info->bytes = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]);
+
+        if (tag == C_Integer)
+            integerMap[poolIndex] = info;
+        else
+            floatMap[poolIndex] = info;
+    } else if (tag == C_Long || tag == C_Double) {
+        BigNumber_info *info = new BigNumber_info;
+        info->high_bytes = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]);
+        info->low_bytes = pack32BitInteger(bytes[index + 4], bytes[index + 5], bytes[index + 6], bytes[index + 7]);
+
+        if (tag == C_Long)
+            longMap[poolIndex] = info;
+        else
+            doubleMap[poolIndex] = info;
+    } else if (tag == C_NameAndType) {
+        NameAndType_info *info = new NameAndType_info;
+        info->name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+        info->descriptor_index = pack16BitInteger(bytes[index + 2], bytes[index + 3]);
+        nameAndTypeMap[poolIndex] = info;
+    }
+}
+
 static Class *parseClassFile(char const *fileName) {
 
-    vector<char> byteCode = ReadAllBytes(fileName);
+    vector<char> classFileBytes = ReadAllBytes(fileName);
     int index = 0;
 
-    if (!checkMagicNumber(byteCode, index))
+    if (!checkMagicNumber(classFileBytes, index))
         return nullptr;
     index += 4;
 
-    if (!checkVersion(byteCode, index))
+    if (!checkVersion(classFileBytes, index))
         return nullptr;
     index += 4;
 
-    unsigned short constantPoolEntries = pack16BitInteger(byteCode[index], byteCode[index + 1]);
+    unsigned short constantPoolEntries = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
 
     for (int poolIndex = 1; poolIndex < constantPoolEntries; poolIndex++) {
-        unsigned char tag = (unsigned char)byteCode[index];
+        unsigned char tag = (unsigned char) classFileBytes[index];
 
-        if(tag == C_Utf8) {
+        if (tag == C_Utf8) {
             index += 1;
-            unsigned short length = pack16BitInteger(byteCode[index],byteCode[index+1]);
+            unsigned short length = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
             index += 2;
 
+            vector<char> charsVec;
+
             //TODO---Parse out the utf8 constant
+            for (int byteIndex = 0; byteIndex < length; byteIndex++) {
+                unsigned char x = (unsigned char) classFileBytes[index + byteIndex];
+                if ((x & 0x80) == 0x00) {
+                    charsVec.push_back(x);
+                    continue;
+                }
+
+                byteIndex += 1;
+                unsigned char y = (unsigned char) classFileBytes[index + byteIndex];
+
+
+            }
 
             index += length;
             continue;
         }
 
-        //TODO---Handle each constant type
+        parseConstantPoolEntry(classFileBytes, index, tag, poolIndex);
+
         index += 1 + getSizeFromTag(tag);
     }
 
-    unsigned short access_flags = pack16BitInteger(byteCode[index],byteCode[index+1]);
+    unsigned short access_flags = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
 
-    unsigned short this_class = pack16BitInteger(byteCode[index],byteCode[index+1]);
+    unsigned short this_class = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
 
-    unsigned short super_class = pack16BitInteger(byteCode[index],byteCode[index+1]);
+    unsigned short super_class = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
+
+    unsigned short interface_count = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
+    index += 2;
+
+    for (int interfacesIndex = 0; interfacesIndex < interface_count; interfacesIndex++) {
+        unsigned short interfaceConstantPoolIndex = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
+        index += 2;
+    }
+
+    unsigned short fields_count = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
+    index += 2;
+
+    for (int fieldsIndex = 0; fieldsIndex < fields_count; fieldsIndex++) {
+    }
+
+    unsigned short methods_count = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
+    index += 2;
+
+    for (int methodsIndex = 0; methodsIndex < methods_count; methodsIndex++) {
+    }
+
+    unsigned short attributes_count = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
+    index += 2;
+
+    for (int attributesIndex = 0; attributesIndex < attributes_count; attributesIndex++) {
+    }
 }
