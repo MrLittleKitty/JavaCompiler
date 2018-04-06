@@ -164,10 +164,26 @@ static Class *parseClassFile(char const *fileName) {
         unsigned char tag = (unsigned char)byteCode[index];
 
         if(tag == C_Utf8) {
+            index += 1;
+            unsigned short length = pack16BitInteger(byteCode[index],byteCode[index+1]);
+            index += 2;
+
+            //TODO---Parse out the utf8 constant
+
+            index += length;
             continue;
         }
 
         //TODO---Handle each constant type
         index += 1 + getSizeFromTag(tag);
     }
+
+    unsigned short access_flags = pack16BitInteger(byteCode[index],byteCode[index+1]);
+    index += 2;
+
+    unsigned short this_class = pack16BitInteger(byteCode[index],byteCode[index+1]);
+    index += 2;
+
+    unsigned short super_class = pack16BitInteger(byteCode[index],byteCode[index+1]);
+    index += 2;
 }
