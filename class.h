@@ -10,7 +10,7 @@ private:
     std::vector<Method> methods;
     std::vector<Field> fields;
     std::vector<Attribute> attributes;
-    Class superClass;
+    Class* superClass;
     std::vector<Class> interfaces;
 };
 

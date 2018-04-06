@@ -1,9 +1,71 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <map>
 #include "class.h"
+#define C_Class 7
+#define C_Fieldref 9
+#define C_Methodref 10
+#define C_InterfaceMethodRef 11
+#define C_String 8
+#define C_Integer 3
+#define C_Float 4
+#define C_Long 5
+#define C_Double 6
+#define C_NameAndType 12
+#define C_Utf8 1
 
 using namespace std;
+
+struct Class_info {
+    unsigned short name_index;
+};
+
+//Works for Fieldref, Methodref, and InterfaceMethodref
+struct Ref_info {
+    unsigned short class_index;
+    unsigned short name_and_type_index;
+};
+
+struct String_info {
+    unsigned short string_index;
+};
+
+struct Integer_info {
+    unsigned int bytes;
+};
+
+struct Float_info {
+    unsigned int bytes;
+};
+
+struct Long_info {
+    unsigned int high_bytes;
+    unsigned int low_bytes;
+};
+
+struct Double_info {
+    unsigned int high_bytes;
+    unsigned int low_bytes;
+};
+
+struct NameAndType_info {
+    unsigned short name_index;
+    unsigned short descriptor_index;
+};
+
+map<int, Class_info*> classMap;
+map<int, Ref_info*> fieldRefMap;
+map<int, Ref_info*> methodRefMap;
+map<int, Ref_info*> interfaceMethodRefMap;
+map<int, String_info*> stringInfoMap;
+map<int, Integer_info*> integerMap;
+map<int, Float_info*> floatMap;
+map<int, Long_info*> longMap;
+map<int, Double_info*> doubleMap;
+map<int, NameAndType_info*> nameAndTypeMap;
+map<int, char*> stringMap;
+
 
 static unsigned short pack16BitInteger(unsigned char upper, unsigned char lower) {
     unsigned short result = upper;
@@ -22,6 +84,30 @@ static unsigned int pack32BitInteger(unsigned char upper1, unsigned char upper2,
     result = result | (unsigned int) (lower1);
 
     return result;
+}
+
+static int getSizeFromTag(unsigned char tag) {
+    if(tag == C_Class)
+        return 2;
+    else if(tag == C_Fieldref)
+        return 4;
+    else if(tag == C_Methodref)
+        return 4;
+    else if(tag == C_InterfaceMethodRef)
+        return 4;
+    else if(tag == C_String)
+        return 2;
+    else if(tag == C_Integer)
+        return 4;
+    else if(tag == C_Float)
+        return 4;
+    else if(tag == C_Long)
+        return 8;
+    else if(tag == C_Double)
+        return 8;
+    else if(tag == C_NameAndType)
+        return 4;
+    else return 0;
 }
 
 static vector<char> ReadAllBytes(char const *filename) {
@@ -77,6 +163,11 @@ static Class *parseClassFile(char const *fileName) {
     for (int poolIndex = 1; poolIndex < constantPoolEntries; poolIndex++) {
         unsigned char tag = (unsigned char)byteCode[index];
 
+        if(tag == C_Utf8) {
+            continue;
+        }
 
+        //TODO---Handle each constant type
+        index += 1 + getSizeFromTag(tag);
     }
 }
