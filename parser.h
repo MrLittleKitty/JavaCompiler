@@ -210,16 +210,32 @@ static Class *parseClassFile(char const *fileName) {
             //TODO---Parse out the utf8 constant
             for (int byteIndex = 0; byteIndex < length; byteIndex++) {
                 unsigned char x = (unsigned char) classFileBytes[index + byteIndex];
-                if ((x & 0x80) == 0x00) {
+                byteIndex += 1;
+                if ((unsigned char) (x & 0x80) == 0x00) {
                     charsVec.push_back(x);
                     continue;
                 }
 
-                byteIndex += 1;
+
                 unsigned char y = (unsigned char) classFileBytes[index + byteIndex];
+                byteIndex += 1;
+                if ((unsigned char) (x & 0xE0) == 0xC0
+                    && (unsigned char) (y & 0xC0) == 0x80) {
+                    charsVec.push_back((unsigned char) (((x & 0x1f) << 6) + (y & 0x3f)));
+                    continue;
+                }
 
-
+                unsigned char z = (unsigned char) classFileBytes[index + byteIndex];
+                byteIndex += 1;
+                if ((unsigned char) (x & 0xF0) == 0xE0
+                    && (unsigned char) (y & 0xC0) == 0x80
+                    && (unsigned char) (z & 0xC0) == 0x80) {
+                    charsVec.push_back((unsigned char) (((x & 0xf) << 12) + ((y & 0x3f) << 6) + (z & 0x3f)));
+                }
             }
+
+            std::string str(charsVec.begin(), charsVec.end());
+            stringMap[poolIndex] = str;
 
             index += length;
             continue;
