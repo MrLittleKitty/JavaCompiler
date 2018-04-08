@@ -1,0 +1,82 @@
+ca fe ba be //Magic
+
+00 00 //Minor Version
+00 32  //Major version
+
+00 1f //Constant pool count 
+
+0a //Constant pool first tag (10 = methodref)
+00 06 //class_index (6)
+00 12 //name and type index(18)
+
+09 //Constant Pool tag (9 = fieldref)
+00 13 //Class index (19)
+00 14 // name and type index(20)
+
+0a //constant pool tag (10 = methodref)
+00 15
+00 16
+
+0a //constant pool tag (10 = methodref)
+00 05 
+00 17 
+
+07 //constant pool tag (7 = class)
+00 18 //name index
+
+07 //constant pool tag (7 = class) 
+00 19 
+
+01 //constant pool tag (1 = Utf8)
+00 06 //length of utf8 (in bytes)
+3c 69 6e 69 74 3e //"<init>"
+
+01 //constant pool tag (1 = Utf8)
+00 03
+28 29 56 
+
+01 //constant pool tag (1 = Utf8)
+00 04 
+43 6f 64 65 
+
+01 //constant pool tag (1 = Utf8)
+00 0f
+4c 69 6e 65 4e 75 6d 62 65 72 54 61 62 6c 65 
+
+01 //constant pool tag (1 = Utf8)
+00 08
+70 72 69 6e 74 49 6e 74 
+
+01 //constant pool tag (1 = Utf8) 
+00 04 
+28 49 29 56 
+
+01 //constant pool tag (1 = Utf8)
+00
+046d 6169 6e01 0016 285b 4c6a 6176 612f
+6c61 6e67 2f53 7472 696e 673b 2956 0100
+0d53 7461 636b 4d61 7054 6162 6c65 0100
+0a53 6f75 7263 6546 696c 6501 000a 5465
+7374 312e 6a61 7661 0c00 0700 0807 001a
+0c00 1b00 1c07 001d 0c00 1e00 0c0c 000b
+000c 0100 0554 6573 7431 0100 106a 6176
+612f 6c61 6e67 2f4f 626a 6563 7401 0010
+6a61 7661 2f6c 616e 672f 5379 7374 656d
+0100 036f 7574 0100 154c 6a61 7661 2f69
+6f2f 5072 696e 7453 7472 6561 6d3b 0100
+136a 6176 612f 696f 2f50 7269 6e74 5374
+7265 616d 0100 0770 7269 6e74 6c6e 0021
+0005 0006 0000 0000 0003 0001 0007 0008
+0001 0009 0000 001d 0001 0001 0000 0005
+2ab7 0001 b100 0000 0100 0a00 0000 0600
+0100 0000 0100 0900 0b00 0c00 0100 0900
+0000 2400 0200 0100 0000 08b2 0002 1ab6
+0003 b100 0000 0100 0a00 0000 0a00 0200
+0000 0300 0700 0400 0900 0d00 0e00 0100
+0900 0000 5300 0200 0400 0000 1503 3c1b
+1014 603d 1c3e 1b9a 0006 1035 3e1d b800
+04b1 0000 0002 000a 0000 001e 0007 0000
+0006 0002 0007 0007 0008 0009 0009 000d
+000a 0010 000c 0014 000d 000f 0000 0008
+0001 fe00 1001 0101 0001 0010 0000 0002
+0011 

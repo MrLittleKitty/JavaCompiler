@@ -194,39 +194,37 @@ static Class *parseClassFile(char const *fileName) {
         return nullptr;
     index += 4;
 
+    //"The value of the constant_pool_count item is equal to the number of entries in the constant_pool table plus one"
     unsigned short constantPoolEntries = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
 
     for (int poolIndex = 1; poolIndex < constantPoolEntries; poolIndex++) {
         unsigned char tag = (unsigned char) classFileBytes[index];
+        index += 1;
 
         if (tag == C_Utf8) {
-            index += 1;
             unsigned short length = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
             index += 2;
 
             vector<char> charsVec;
 
-            //TODO---Parse out the utf8 constant
             for (int byteIndex = 0; byteIndex < length; byteIndex++) {
                 unsigned char x = (unsigned char) classFileBytes[index + byteIndex];
-                byteIndex += 1;
                 if ((unsigned char) (x & 0x80) == 0x00) {
                     charsVec.push_back(x);
                     continue;
                 }
 
-
-                unsigned char y = (unsigned char) classFileBytes[index + byteIndex];
                 byteIndex += 1;
+                unsigned char y = (unsigned char) classFileBytes[index + byteIndex];
                 if ((unsigned char) (x & 0xE0) == 0xC0
                     && (unsigned char) (y & 0xC0) == 0x80) {
                     charsVec.push_back((unsigned char) (((x & 0x1f) << 6) + (y & 0x3f)));
                     continue;
                 }
 
-                unsigned char z = (unsigned char) classFileBytes[index + byteIndex];
                 byteIndex += 1;
+                unsigned char z = (unsigned char) classFileBytes[index + byteIndex];
                 if ((unsigned char) (x & 0xF0) == 0xE0
                     && (unsigned char) (y & 0xC0) == 0x80
                     && (unsigned char) (z & 0xC0) == 0x80) {
@@ -243,7 +241,7 @@ static Class *parseClassFile(char const *fileName) {
 
         parseConstantPoolEntry(classFileBytes, index, tag, poolIndex);
 
-        index += 1 + getSizeFromTag(tag);
+        index += getSizeFromTag(tag);
     }
 
     unsigned short access_flags = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
