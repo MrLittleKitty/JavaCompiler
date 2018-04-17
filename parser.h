@@ -212,9 +212,28 @@ static Code *parseCodeAttribute(vector<char> &bytes, int &index) {
                     attributes_count, attributes);
 }
 
+static std::vector<std::string> parseAccessFlag(unsigned short access_flag) {
+
+    std::vector<std::string> qualifiers;
+
+    if (access_flag & 0x0001 > 0)
+        qualifiers.emplace_back("public");
+    else if (access_flag & 0x0002 > 0)
+        qualifiers.emplace_back("private");
+    else if (access_flag & 0x0004 > 0)
+        qualifiers.emplace_back("protected");
+
+    if (access_flag & 0x0010 > 0)
+        qualifiers.push_back("static");
+
+    return qualifiers;
+}
+
 static Method *parseMethodInfo(vector<char> &bytes, int &index) {
     unsigned short access_flags = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
+
+    auto qualifiers = parseAccessFlag(access_flags);
 
     unsigned short name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
@@ -241,7 +260,7 @@ static Method *parseMethodInfo(vector<char> &bytes, int &index) {
         }
     }
 
-    return new Method(stringMap[name_index], code);
+    return new Method(stringMap[name_index], stringMap[descriptor_index], code, qualifiers);
 }
 
 static void parseConstantPoolEntry(vector<char> &bytes, int index, unsigned char tag, int poolIndex) {
@@ -395,7 +414,7 @@ static Class *parseClassFile(char const *fileName) {
         delete attribute;
     }
 
-    //Now we begin linking together all the parsed data into a "nice" c++ class structure (fuck c++ though)
+    //Now we begin linking together all the parsed data into a "nice" c++ class structure
     Class *instance = new Class(stringMap[classMap[this_class]->name_index], methods, attributes);
 
     return instance;
