@@ -58,33 +58,17 @@ map<int, BigNumber_info *> doubleMap;
 map<int, NameAndType_info *> nameAndTypeMap;
 map<int, string> stringMap;
 
-struct Attribute_info {
-    unsigned short attribute_name_index;
-    unsigned int attribute_length;
-    unsigned char *info;
-};
 
-struct Code_attribute {
-    unsigned short max_stack;
-    unsigned short max_locals;
-    unsigned int code_length;
-    unsigned char *code;
-    unsigned short exeception_table_length;
-    unsigned char *exception_table;
-    unsigned short attributes_count;
-    Attribute_info **attributes;
-};
-
-struct Method_info {
-    unsigned short access_flags;
-    unsigned short name_index;
-    unsigned short descriptor_index;
-    unsigned short attributes_count;
-    Attribute_info **attributes;
-};
-
-vector<Method_info *> methodInfoList;
-vector<Attribute_info *> attributeInfoList;
+//struct Method_info {
+//    unsigned short access_flags;
+//    unsigned short name_index;
+//    unsigned short descriptor_index;
+//    unsigned short attributes_count;
+//    Attribute_info **attributes;
+//};
+//
+//vector<Method_info *> methodInfoList;
+//vector<Attribute_info *> attributeInfoList;
 
 static unsigned short pack16BitInteger(unsigned char upper, unsigned char lower) {
     unsigned short result = upper;
@@ -163,85 +147,101 @@ static bool checkVersion(vector<char> &bytes, int index) {
     return majorVersion >= 50; //50 is Java 6.0
 }
 
-static Attribute_info *parseAttributeInfo(vector<char> &bytes, int &index) {
-    Attribute_info *info = new Attribute_info;
-    info->attribute_name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+static Attribute *parseAttributeInfo(vector<char> &bytes, int &index) {
+
+    unsigned short attribute_name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    info->attribute_length = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]);
+    unsigned int attribute_length = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2],
+                                                     bytes[index + 3]);
     index += 4;
 
-    info->info = new unsigned char[info->attribute_length];
-    for (unsigned int i = 0; i < info->attribute_length; i++) {
-        info->info[i] = (unsigned char) bytes[index];
+    unsigned char *info = new unsigned char[attribute_length];
+    for (unsigned int i = 0; i < attribute_length; i++) {
+        info[i] = (unsigned char) bytes[index];
         index += 1;
     }
 
-    return info;
+    return new Attribute(stringMap[attribute_name_index], attribute_length, info);
 }
 
-static Code_attribute *parseCodeAttribute(vector<char> &bytes, int &index) {
-    Code_attribute *code = new Code_attribute;
-
-    code->max_stack = pack16BitInteger(bytes[index], bytes[index + 1]);
+static Code *parseCodeAttribute(vector<char> &bytes, int &index) {
+    unsigned short attribute_name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    code->max_locals = pack16BitInteger(bytes[index], bytes[index + 1]);
-    index += 2;
-
-    code->code_length = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]);
+    unsigned int attribute_length = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2],
+                                                     bytes[index + 3]);
     index += 4;
 
-    code->code = new unsigned char[code->code_length];
-    for (unsigned int i = 0; i < code->code_length; i++) {
-        code->code[i] = (unsigned char) bytes[index];
+    unsigned short max_stack = pack16BitInteger(bytes[index], bytes[index + 1]);
+    index += 2;
+
+    unsigned short max_locals = pack16BitInteger(bytes[index], bytes[index + 1]);
+    index += 2;
+
+    unsigned int code_length = pack32BitInteger(bytes[index], bytes[index + 1], bytes[index + 2], bytes[index + 3]);
+    index += 4;
+
+    unsigned char *code = new unsigned char[code_length];
+    for (unsigned int i = 0; i < code_length; i++) {
+        code[i] = (unsigned char) bytes[index];
         index += 1;
     }
 
-    code->exeception_table_length = pack16BitInteger(bytes[index], bytes[index + 1]);
+    unsigned short exeception_table_length = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    int exceptionByteSize = code->exeception_table_length * 8;
-    code->exception_table = new unsigned char[exceptionByteSize];
+    int exceptionByteSize = exeception_table_length * 8;
+    unsigned char *exception_table = new unsigned char[exceptionByteSize];
     for (unsigned int i = 0; i < exceptionByteSize; i++) {
-        code->exception_table[i] = (unsigned char) bytes[index];
+        exception_table[i] = (unsigned char) bytes[index];
         index += 1;
     }
 
-    code->attributes_count = pack16BitInteger(bytes[index], bytes[index + 1]);
+    unsigned short attributes_count = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    code->attributes = new Attribute_info *[code->attributes_count];
+    Attribute **attributes = new Attribute *[attributes_count];
 
-    for (int attributeIndex = 0; attributeIndex < code->attributes_count; attributeIndex++) {
-        Attribute_info *attribute_info = parseAttributeInfo(bytes, index);
-        code->attributes[attributeIndex] = attribute_info;
+    for (int attributeIndex = 0; attributeIndex < attributes_count; attributeIndex++) {
+        Attribute *attribute_info = parseAttributeInfo(bytes, index);
+        attributes[attributeIndex] = attribute_info;
     }
 
-    return code;
+    return new Code(max_stack, max_locals, code_length, code, exeception_table_length, exception_table,
+                    attributes_count, attributes);
 }
 
-static Method_info *parseMethodInfo(vector<char> &bytes, int &index) {
-    Method_info *info = new Method_info;
-    info->access_flags = pack16BitInteger(bytes[index], bytes[index + 1]);
+static Method *parseMethodInfo(vector<char> &bytes, int &index) {
+    unsigned short access_flags = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    info->name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+    unsigned short name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    info->descriptor_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+    unsigned short descriptor_index = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    info->attributes_count = pack16BitInteger(bytes[index], bytes[index + 1]);
+    unsigned short attributes_count = pack16BitInteger(bytes[index], bytes[index + 1]);
     index += 2;
 
-    info->attributes = new Attribute_info *[info->attributes_count];
+    Attribute **attributes = new Attribute *[attributes_count - 1];
 
-    for (int attributeIndex = 0; attributeIndex < info->attributes_count; attributeIndex++) {
-        Attribute_info *attribute_info = parseAttributeInfo(bytes, index);
-        info->attributes[attributeIndex] = attribute_info;
+    int attributeIndex = 0;
+    Code *code = nullptr;
+    for (int i = 0; i < attributes_count; i++) {
+        unsigned short attribute_name_index = pack16BitInteger(bytes[index], bytes[index + 1]);
+
+        if (stringMap[attribute_name_index] == "Code")
+            code = parseCodeAttribute(bytes, index);
+        else {
+            Attribute *attribute_info = parseAttributeInfo(bytes, index);
+            attributes[attributeIndex] = attribute_info;
+            attributeIndex++;
+        }
     }
-    return info;
+
+    return new Method(stringMap[name_index], code);
 }
 
 static void parseConstantPoolEntry(vector<char> &bytes, int index, unsigned char tag, int poolIndex) {
@@ -378,20 +378,25 @@ static Class *parseClassFile(char const *fileName) {
     unsigned short methods_count = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
 
-
+    std::vector<Method> methods;
     for (int methodsIndex = 0; methodsIndex < methods_count; methodsIndex++) {
-        Method_info *info = parseMethodInfo(classFileBytes, index);
-        methodInfoList.push_back(info);
+        Method *method = parseMethodInfo(classFileBytes, index);
+        methods.push_back(*method);
+        delete method;
     }
 
     unsigned short attributes_count = pack16BitInteger(classFileBytes[index], classFileBytes[index + 1]);
     index += 2;
 
+    std::vector<Attribute> attributes;
     for (int attributesIndex = 0; attributesIndex < attributes_count; attributesIndex++) {
-        Attribute_info *attribute_info = parseAttributeInfo(classFileBytes, index);
-        attributeInfoList.push_back(attribute_info);
+        Attribute *attribute = parseAttributeInfo(classFileBytes, index);
+        attributes.push_back(*attribute);
+        delete attribute;
     }
 
     //Now we begin linking together all the parsed data into a "nice" c++ class structure (fuck c++ though)
+    Class *instance = new Class(stringMap[classMap[this_class]->name_index], methods, attributes);
 
+    return instance;
 }
