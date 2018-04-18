@@ -1,3 +1,6 @@
+#ifndef JAVACOMPILER_PARSER_H
+#define JAVACOMPILER_PARSER_H
+
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -419,3 +422,5 @@ static Class *parseClassFile(char const *fileName) {
 
     return instance;
 }
+
+#endif //JAVACOMPILER_PARSER_H

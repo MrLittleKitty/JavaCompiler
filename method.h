@@ -5,6 +5,7 @@
 #include <utility>
 #include "instruction.h"
 #include "code.h"
+#include "opcode.h"
 
 class Method {
 private:
@@ -15,9 +16,8 @@ private:
     std::string returnType;
     std::vector<std::string> parameterTypes;
 
-    Code *byteCode;
-
-//    std::vector<Instruction> instructions;
+    Code *code;
+    std::vector<Instruction> instructions;
 
     void parseDescriptor(std::string descriptor) {
 
@@ -70,9 +70,76 @@ private:
         }
     }
 
+    void parseByteCode(unsigned char *byteCode, int length) {
+        for (int i = 0; i < length; i++) {
+            unsigned char opCode = byteCode[i];
+            switch (opCode) {
+                case op_iconst_ml:
+                case op_iconst_0:
+                case op_iconst_1:
+                case op_iconst_2:
+                case op_iconst_3:
+                case op_iconst_4:
+                case op_iconst_5:
+                case op_return:
+                case op_iadd:
+                case op_lstore_3:
+                case iload_0:
+                case iload_1:
+                case iload_2:
+                case iload_3:
+                case istore_0:
+                case istore_1:
+                case istore_2:
+                case istore_3: {
+                    instructions.emplace_back(Instruction(opCode));
+                    break;
+                }
+
+                case op_iload:
+                case op_istore:
+                case op_bipush: {
+                    i++;
+                    unsigned char index = byteCode[i];
+                    std::vector<unsigned char> operands;
+                    operands.emplace_back(index);
+                    instructions.emplace_back(Instruction(opCode, operands));
+                    break;
+                }
+
+                case op_if_icmpne:
+                case op_if_icmpeq:
+                case op_if_icmpgt:
+                case op_if_icmplt:
+                case op_ifeq:
+                case op_ifne:
+                case op_ifgt:
+                case op_iflt:
+                case op_goto:
+                case op_invokestatic:
+                case op_invokespecial:
+                case op_getstatic:
+                case op_invokevirtual: {
+                    i++;
+                    unsigned char branch1 = byteCode[i];
+                    i++;
+                    unsigned char branch2 = byteCode[i];
+                    std::vector<unsigned char> operands;
+                    operands.emplace_back(branch1);
+                    operands.emplace_back(branch2);
+                    instructions.emplace_back(Instruction(opCode, operands));
+                    break;
+                }
+                default: {
+                    printf("Unknown opCode: %x \n", opCode);
+                }
+            }
+        }
+    }
+
 public:
     Method(std::string name, std::string descriptor, Code *byteCode, std::vector<std::string> qualifiers)
-            : name(name), byteCode(byteCode) {
+            : name(name), code(byteCode) {
 
         //Methods are default public and non-static
         access = "public";
@@ -89,6 +156,8 @@ public:
         //Parse the descriptor to get type information
         parseDescriptor(descriptor);
 
+        //Parse the bytecode into instruction objects
+        parseByteCode(code->getByteCode(), code->getSize());
     }
 
     bool isStatic() const {
@@ -97,6 +166,14 @@ public:
 
     std::string getAccess() const {
         return access;
+    }
+
+    Code *getCode() const {
+        return code;
+    }
+
+    std::vector<Instruction> &getInstructions() {
+        return instructions;
     }
 };
 
