@@ -49,17 +49,17 @@ struct NameAndType_info {
     unsigned short descriptor_index;
 };
 
-map<int, Class_info *> classMap;
-map<int, Ref_info *> fieldRefMap;
-map<int, Ref_info *> methodRefMap;
-map<int, Ref_info *> interfaceMethodRefMap;
-map<int, String_info *> stringInfoMap;
-map<int, Number_info *> integerMap;
-map<int, Number_info *> floatMap;
-map<int, BigNumber_info *> longMap;
-map<int, BigNumber_info *> doubleMap;
-map<int, NameAndType_info *> nameAndTypeMap;
-map<int, string> stringMap;
+static map<int, Class_info *> classMap;
+static map<int, Ref_info *> fieldRefMap;
+static map<int, Ref_info *> methodRefMap;
+static map<int, Ref_info *> interfaceMethodRefMap;
+static map<int, String_info *> stringInfoMap;
+static map<int, Number_info *> integerMap;
+static map<int, Number_info *> floatMap;
+static map<int, BigNumber_info *> longMap;
+static map<int, BigNumber_info *> doubleMap;
+static map<int, NameAndType_info *> nameAndTypeMap;
+static map<int, string> stringMap;
 
 
 //struct Method_info {

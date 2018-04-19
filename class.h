@@ -20,7 +20,21 @@ public:
 
     }
 
+    std::string getName() const {
+        return name;
+    }
 
+    std::vector<Method> &getMethods() {
+        return methods;
+    }
+
+    std::vector<Field> &getFields() {
+        return fields;
+    }
+
+    std::vector<Attribute> &getAttributes() {
+        return attributes;
+    }
 };
 
 #endif //JAVACOMPILER_CLASS_H

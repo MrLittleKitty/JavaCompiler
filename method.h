@@ -13,6 +13,7 @@ private:
     std::string access;
     bool is_static;
 
+    std::string descriptor;
     std::string returnType;
     std::vector<std::string> parameterTypes;
 
@@ -140,7 +141,7 @@ private:
 
 public:
     Method(std::string name, std::string descriptor, Code *byteCode, std::vector<std::string> qualifiers)
-            : name(name), code(byteCode) {
+            : name(name), descriptor(descriptor), code(byteCode) {
 
         //Methods are default public and non-static
         access = "public";
@@ -155,6 +156,7 @@ public:
         }
 
         //Parse the descriptor to get type information
+
         parseDescriptor(descriptor);
 
         //Parse the bytecode into instruction objects
@@ -171,6 +173,10 @@ public:
 
     Code *getCode() const {
         return code;
+    }
+
+    std::string getDescriptor() const {
+        return descriptor;
     }
 
     std::vector<Instruction> &getInstructions() {
