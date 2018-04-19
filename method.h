@@ -119,7 +119,8 @@ private:
                 case op_invokestatic:
                 case op_invokespecial:
                 case op_getstatic:
-                case op_invokevirtual: {
+                case op_invokevirtual:
+                case op_iinc: {
                     i++;
                     unsigned char branch1 = byteCode[i];
                     i++;

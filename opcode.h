@@ -46,4 +46,6 @@
 
 #define op_bipush 0x10
 
+#define op_iinc 132
+
 #endif //JAVACOMPILER_OPCODE_H
