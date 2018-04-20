@@ -9,10 +9,17 @@ struct StackFrame {
     std::stack<int> operandStack;
 };
 
+static int constructOffset(unsigned char one, unsigned char two) {
+    return (int) ((unsigned int) (one << 8) | two);
+}
+
 static void runInstructions(std::vector<Instruction> &instructions, StackFrame &currentFrame) {
     for (int i = 0; i < instructions.size(); i++) {
         Instruction instruction = instructions[i];
         switch (instruction.getOpCode()) {
+            case op_return: {
+                return;
+            }
             case op_iconst_ml: {
                 currentFrame.operandStack.push(-1);
                 break;
@@ -49,8 +56,11 @@ static void runInstructions(std::vector<Instruction> &instructions, StackFrame &
                 currentFrame.operandStack.push(one + two);
                 break;
             }
-
-            case op_return:
+            case op_bipush: {
+                int value = (int) instruction.getOperands()[0];
+                currentFrame.operandStack.push(value);
+                break;
+            }
 
             case op_lstore_3:
             case iload_0:
@@ -66,10 +76,7 @@ static void runInstructions(std::vector<Instruction> &instructions, StackFrame &
 
             case op_iload:
             case op_istore:
-            case op_bipush: {
 
-                break;
-            }
 
             case op_if_icmpne:
             case op_if_icmpeq:
