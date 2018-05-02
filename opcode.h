@@ -26,12 +26,18 @@
 #define op_if_icmpeq 159
 #define op_if_icmpne 160
 #define op_if_icmplt 161
+#define op_if_icmpge 162
 #define op_if_icmpgt 163
+#define op_if_icmple 164
 
 #define op_ifeq 153
 #define op_ifne 154
-#define op_ifgt 157
 #define op_iflt 155
+#define op_ifge 156
+#define op_ifgt 157
+
+#define op_ifle 0x9e
+
 
 #define op_invokespecial 0xb7
 #define op_invokestatic 184

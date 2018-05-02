@@ -93,18 +93,19 @@ private:
                 case istore_1:
                 case istore_2:
                 case istore_3: {
-                    instructions.emplace_back(Instruction(opCode));
+                    instructions.emplace_back(Instruction(i, opCode));
                     break;
                 }
 
                 case op_iload:
                 case op_istore:
                 case op_bipush: {
+                    int codeIndex = i;
                     i++;
                     unsigned char index = byteCode[i];
                     std::vector<unsigned char> operands;
                     operands.emplace_back(index);
-                    instructions.emplace_back(Instruction(opCode, operands));
+                    instructions.emplace_back(Instruction(codeIndex, opCode, operands));
                     break;
                 }
 
@@ -112,16 +113,21 @@ private:
                 case op_if_icmpeq:
                 case op_if_icmpgt:
                 case op_if_icmplt:
+                case op_if_icmpge:
+                case op_if_icmple:
                 case op_ifeq:
                 case op_ifne:
                 case op_ifgt:
                 case op_iflt:
+                case op_ifle:
+                case op_ifge:
                 case op_goto:
                 case op_invokestatic:
                 case op_invokespecial:
                 case op_getstatic:
                 case op_invokevirtual:
                 case op_iinc: {
+                    int codeIndex = i;
                     i++;
                     unsigned char branch1 = byteCode[i];
                     i++;
@@ -129,7 +135,7 @@ private:
                     std::vector<unsigned char> operands;
                     operands.emplace_back(branch1);
                     operands.emplace_back(branch2);
-                    instructions.emplace_back(Instruction(opCode, operands));
+                    instructions.emplace_back(Instruction(codeIndex, opCode, operands));
                     break;
                 }
                 default: {

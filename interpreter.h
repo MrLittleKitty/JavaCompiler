@@ -10,6 +10,14 @@ static int constructOffset(unsigned char one, unsigned char two) {
     return (int) ((unsigned int) (one << 8) | two);
 }
 
+static int getIndexOfByteCode(std::vector<Instruction> &instructions, int byteCodeIndex) {
+    for (int i = 0; i < instructions.size(); i++) {
+        if (instructions[i].getByteCodeIndex() == byteCodeIndex)
+            return i;
+    }
+    return -1;
+}
+
 static void runInstructions(Class *program, std::vector<Instruction> &instructions, StackFrame &currentFrame) {
     for (int i = 0; i < instructions.size(); i++) {
         Instruction instruction = instructions[i];
@@ -118,7 +126,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value2 = currentFrame.popOperand();
                 if (value1 != value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
@@ -127,7 +136,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value2 = currentFrame.popOperand();
                 if (value1 == value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
@@ -136,7 +146,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value2 = currentFrame.popOperand();
                 if (value1 > value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
             }
             case op_if_icmplt: {
@@ -144,7 +155,30 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value2 = currentFrame.popOperand();
                 if (value1 < value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
+                }
+                break;
+            }
+
+            case op_if_icmple: {
+                int value1 = currentFrame.popOperand();
+                int value2 = currentFrame.popOperand();
+                if (value1 <= value2) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
+                }
+                break;
+            }
+
+            case op_if_icmpge: {
+                int value1 = currentFrame.popOperand();
+                int value2 = currentFrame.popOperand();
+                if (value1 >= value2) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
@@ -153,7 +187,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value = currentFrame.popOperand();
                 if (value == 0) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
@@ -161,7 +196,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value = currentFrame.popOperand();
                 if (value != 0) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
@@ -169,7 +205,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value = currentFrame.popOperand();
                 if (value > 0) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
@@ -177,13 +214,35 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 int value = currentFrame.popOperand();
                 if (value < 0) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
+                }
+                break;
+            }
+
+            case op_ifge: {
+                int value = currentFrame.popOperand();
+                if (value >= 0) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
+                }
+                break;
+            }
+
+            case op_ifle: {
+                int value = currentFrame.popOperand();
+                if (value <= 0) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    //The loop is going to increment it by one after this runs
+                    i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 }
                 break;
             }
             case op_goto: {
                 int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
-                i = offset - 1; //The loop is going to increment it to offset after this runs
+                //The loop is going to increment it by one after this runs
+                i = getIndexOfByteCode(instructions, instruction.getByteCodeIndex() + offset) - 1;
                 break;
             }
 
@@ -198,12 +257,17 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
             case op_invokestatic: {
                 int index = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                 std::string methodName = program->getMethodNameFromConstantPool(index);
-                for (auto &method : program->getMethods()) {
-                    if (method.getName() == methodName) {
-                        StackFrame *frame = new StackFrame(method.getCode()->getMaxLocals(), &currentFrame);
-                        runInstructions(program, method.getInstructions(), *frame);
-                        delete frame;
-                        break;
+                if (methodName == "printInt") {
+                    int value = currentFrame.popOperand();
+                    printf("%d", value);
+                } else {
+                    for (auto &method : program->getMethods()) {
+                        if (method.getName() == methodName) {
+                            StackFrame *frame = new StackFrame(method.getCode()->getMaxLocals(), &currentFrame);
+                            runInstructions(program, method.getInstructions(), *frame);
+                            delete frame;
+                            break;
+                        }
                     }
                 }
                 break;

@@ -5,16 +5,17 @@
 
 class Instruction {
 private:
+    int byteCodeIndex;
     unsigned char opCode;
     std::vector<unsigned char> operands;
 public:
-    Instruction(unsigned char op_code, std::vector<unsigned char> operands)
-            : opCode(op_code), operands(std::move(operands)) {
+    Instruction(int byteCodeIndex, unsigned char op_code, std::vector<unsigned char> operands)
+            : byteCodeIndex(byteCodeIndex), opCode(op_code), operands(std::move(operands)) {
 
     }
 
-    Instruction(unsigned char op_code)
-            : opCode(op_code) {
+    Instruction(int byteCodeIndex, unsigned char op_code)
+            : byteCodeIndex(byteCodeIndex), opCode(op_code) {
 
     }
 
@@ -24,6 +25,10 @@ public:
 
     std::vector<unsigned char> &getOperands() {
         return operands;
+    }
+
+    int getByteCodeIndex() const {
+        return byteCodeIndex;
     }
 };
 
