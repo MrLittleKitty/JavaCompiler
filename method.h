@@ -84,7 +84,7 @@ private:
                 case op_iconst_5:
                 case op_return:
                 case op_iadd:
-                case op_lstore_3:
+                case op_aload_0:
                 case iload_0:
                 case iload_1:
                 case iload_2:
@@ -161,6 +161,10 @@ public:
 
         //Parse the bytecode into instruction objects
         parseByteCode(code->getByteCode(), code->getSize());
+    }
+
+    std::string getName() const {
+        return name;
     }
 
     bool isStatic() const {

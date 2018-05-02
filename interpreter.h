@@ -2,18 +2,15 @@
 #define JAVACOMPILER_INTERPRETER_H
 
 #include "class.h"
+#include "stackframe.h"
 #include <stack>
 
-struct StackFrame {
-    int *localVariables;
-    std::stack<int> operandStack;
-};
 
 static int constructOffset(unsigned char one, unsigned char two) {
     return (int) ((unsigned int) (one << 8) | two);
 }
 
-static void runInstructions(std::vector<Instruction> &instructions, StackFrame &currentFrame) {
+static void runInstructions(Class *program, std::vector<Instruction> &instructions, StackFrame &currentFrame) {
     for (int i = 0; i < instructions.size(); i++) {
         Instruction instruction = instructions[i];
         switch (instruction.getOpCode()) {
@@ -21,90 +18,222 @@ static void runInstructions(std::vector<Instruction> &instructions, StackFrame &
                 return;
             }
             case op_iconst_ml: {
-                currentFrame.operandStack.push(-1);
+                currentFrame.pushOperand(-1);
                 break;
             }
             case op_iconst_0: {
-                currentFrame.operandStack.push(0);
+                currentFrame.pushOperand(0);
                 break;
             }
             case op_iconst_1: {
-                currentFrame.operandStack.push(1);
+                currentFrame.pushOperand(1);
                 break;
             }
             case op_iconst_2: {
-                currentFrame.operandStack.push(2);
+                currentFrame.pushOperand(2);
                 break;
             }
             case op_iconst_3: {
-                currentFrame.operandStack.push(3);
+                currentFrame.pushOperand(3);
                 break;
             }
             case op_iconst_4: {
-                currentFrame.operandStack.push(4);
+                currentFrame.pushOperand(4);
                 break;
             }
             case op_iconst_5: {
-                currentFrame.operandStack.push(5);
+                currentFrame.pushOperand(5);
                 break;
             }
             case op_iadd: {
-                int one = currentFrame.operandStack.top();
-                currentFrame.operandStack.pop();
-                int two = currentFrame.operandStack.top();
-                currentFrame.operandStack.pop();
-                currentFrame.operandStack.push(one + two);
+                int one = currentFrame.popOperand();
+                int two = currentFrame.popOperand();
+                currentFrame.pushOperand(one + two);
                 break;
             }
             case op_bipush: {
                 int value = (int) instruction.getOperands()[0];
-                currentFrame.operandStack.push(value);
+                currentFrame.pushOperand(value);
                 break;
             }
 
-            case op_lstore_3:
-            case iload_0:
-            case iload_1:
-            case iload_2:
-            case iload_3:
-            case istore_0:
-            case istore_1:
-            case istore_2:
+            case op_aload_0: {
+                //Loads an object reference but we aren't handling objects
+                break;
+            }
+
+            case iload_0: {
+                currentFrame.pushOperand(currentFrame.getLocalVariable(0));
+                break;
+            }
+            case iload_1: {
+                currentFrame.pushOperand(currentFrame.getLocalVariable(1));
+                break;
+            }
+            case iload_2: {
+                currentFrame.pushOperand(currentFrame.getLocalVariable(2));
+                break;
+            }
+            case iload_3: {
+                currentFrame.pushOperand(currentFrame.getLocalVariable(3));
+                break;
+            }
+
+            case istore_0: {
+                int value = currentFrame.popOperand();
+                currentFrame.setLocalVariable(0, value);
+                break;
+            }
+            case istore_1: {
+                int value = currentFrame.popOperand();
+                currentFrame.setLocalVariable(1, value);
+                break;
+            }
+            case istore_2: {
+                int value = currentFrame.popOperand();
+                currentFrame.setLocalVariable(2, value);
+                break;
+            }
             case istore_3: {
+                int value = currentFrame.popOperand();
+                currentFrame.setLocalVariable(3, value);
                 break;
             }
 
-            case op_iload:
-            case op_istore:
-
-
-            case op_if_icmpne:
-            case op_if_icmpeq:
-            case op_if_icmpgt:
-            case op_if_icmplt:
-            case op_ifeq:
-            case op_ifne:
-            case op_ifgt:
-            case op_iflt:
-            case op_goto:
-            case op_invokestatic:
-            case op_invokespecial:
-            case op_getstatic:
-            case op_invokevirtual:
-            case op_iinc: {
-
+            case op_iload: {
+                unsigned char index = instruction.getOperands()[0];
+                currentFrame.pushOperand(currentFrame.getLocalVariable(index));
+                break;
             }
+            case op_istore: {
+                unsigned char index = instruction.getOperands()[0];
+                int value = currentFrame.popOperand();
+                currentFrame.setLocalVariable(index, value);
+                break;
+            }
+
+
+            case op_if_icmpne: {
+                int value1 = currentFrame.popOperand();
+                int value2 = currentFrame.popOperand();
+                if (value1 != value2) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+            case op_if_icmpeq: {
+                int value1 = currentFrame.popOperand();
+                int value2 = currentFrame.popOperand();
+                if (value1 == value2) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+            case op_if_icmpgt: {
+                int value1 = currentFrame.popOperand();
+                int value2 = currentFrame.popOperand();
+                if (value1 > value2) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+            }
+            case op_if_icmplt: {
+                int value1 = currentFrame.popOperand();
+                int value2 = currentFrame.popOperand();
+                if (value1 < value2) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+
+            case op_ifeq: {
+                int value = currentFrame.popOperand();
+                if (value == 0) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+            case op_ifne: {
+                int value = currentFrame.popOperand();
+                if (value != 0) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+            case op_ifgt: {
+                int value = currentFrame.popOperand();
+                if (value > 0) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+            case op_iflt: {
+                int value = currentFrame.popOperand();
+                if (value < 0) {
+                    int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    i = offset - 1; //The loop is going to increment it to offset after this runs
+                }
+                break;
+            }
+            case op_goto: {
+                int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                i = offset - 1; //The loop is going to increment it to offset after this runs
+                break;
+            }
+
+            case op_iinc: {
+                unsigned char index = instruction.getOperands()[0];
+                char constant = instruction.getOperands()[1];
+                int newConstant = (int) constant; //Sign extend the signed constant into an int
+                currentFrame.setLocalVariable(index, currentFrame.getLocalVariable(index) + newConstant);
+                break;
+            }
+
+            case op_invokestatic: {
+                int index = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                std::string methodName = program->getMethodNameFromConstantPool(index);
+                for (auto &method : program->getMethods()) {
+                    if (method.getName() == methodName) {
+                        StackFrame *frame = new StackFrame(method.getCode()->getMaxLocals(), &currentFrame);
+                        runInstructions(program, method.getInstructions(), *frame);
+                        delete frame;
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case op_getstatic: {
+                //Loads a static value but we aren't handling that
+                break;
+            }
+            case op_invokespecial: {
+                //Invokes a virtual method but we aren't handling that
+                break;
+            }
+            case op_invokevirtual: {
+                //Invokes a virtual method but we aren't handling that
+                break;
+            }
+
         }
     }
 }
 
 static void runProgram(Class *program) {
 
-    for (auto method : program->getMethods()) {
+    for (auto &method : program->getMethods()) {
         //Look for the main method by checking for the main descriptor
-        if (method.getDescriptor() == "([Ljava/lang/String;)V") {
-            StackFrame frame;
-            runInstructions(method.getInstructions(), frame);
+        if (method.getName() == "main" && method.getDescriptor() == "([Ljava/lang/String;)V") {
+            StackFrame *frame = new StackFrame(method.getCode()->getMaxLocals(), nullptr);
+            runInstructions(program, method.getInstructions(), *frame);
+            delete frame;
             break;
         }
     }

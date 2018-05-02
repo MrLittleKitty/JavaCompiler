@@ -6,6 +6,7 @@
 #include <fstream>
 #include <map>
 #include "class.h"
+#include "parserinfo.h"
 
 #define C_Class 7
 #define C_Fieldref 9
@@ -21,34 +22,6 @@
 
 using namespace std;
 
-struct Class_info {
-    unsigned short name_index;
-};
-
-//Works for Fieldref, Methodref, and InterfaceMethodref
-struct Ref_info {
-    unsigned short class_index;
-    unsigned short name_and_type_index;
-};
-
-struct String_info {
-    unsigned short string_index;
-};
-
-struct Number_info {
-    unsigned int bytes;
-};
-
-struct BigNumber_info {
-    unsigned int high_bytes;
-    unsigned int low_bytes;
-};
-
-struct NameAndType_info {
-    unsigned short name_index;
-    unsigned short descriptor_index;
-};
-
 static map<int, Class_info *> classMap;
 static map<int, Ref_info *> fieldRefMap;
 static map<int, Ref_info *> methodRefMap;
@@ -61,17 +34,6 @@ static map<int, BigNumber_info *> doubleMap;
 static map<int, NameAndType_info *> nameAndTypeMap;
 static map<int, string> stringMap;
 
-
-//struct Method_info {
-//    unsigned short access_flags;
-//    unsigned short name_index;
-//    unsigned short descriptor_index;
-//    unsigned short attributes_count;
-//    Attribute_info **attributes;
-//};
-//
-//vector<Method_info *> methodInfoList;
-//vector<Attribute_info *> attributeInfoList;
 
 static unsigned short pack16BitInteger(unsigned char upper, unsigned char lower) {
     unsigned short result = upper;
@@ -418,7 +380,9 @@ static Class *parseClassFile(char const *fileName) {
     }
 
     //Now we begin linking together all the parsed data into a "nice" c++ class structure
-    Class *instance = new Class(stringMap[classMap[this_class]->name_index], methods, attributes);
+    Class *instance = new Class(stringMap[classMap[this_class]->name_index], methods, attributes,
+                                classMap, fieldRefMap, methodRefMap, interfaceMethodRefMap, stringInfoMap,
+                                integerMap, floatMap, longMap, doubleMap, nameAndTypeMap, stringMap);
 
     return instance;
 }

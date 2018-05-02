@@ -42,7 +42,7 @@
 
 #define op_return 177
 
-#define op_lstore_3 42
+#define op_aload_0 42
 
 #define op_bipush 0x10
 
