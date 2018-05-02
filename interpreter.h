@@ -6,8 +6,8 @@
 #include <stack>
 
 
-static int constructOffset(unsigned char one, unsigned char two) {
-    return (int) ((unsigned int) (one << 8) | two);
+static short constructOffset(unsigned char one, unsigned char two) {
+    return (short) (((unsigned short) (one << 8)) | two);
 }
 
 static int getIndexOfByteCode(std::vector<Instruction> &instructions, int byteCodeIndex) {
@@ -122,8 +122,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
 
 
             case op_if_icmpne: {
-                int value1 = currentFrame.popOperand();
                 int value2 = currentFrame.popOperand();
+                int value1 = currentFrame.popOperand();
                 if (value1 != value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                     //The loop is going to increment it by one after this runs
@@ -132,8 +132,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 break;
             }
             case op_if_icmpeq: {
-                int value1 = currentFrame.popOperand();
                 int value2 = currentFrame.popOperand();
+                int value1 = currentFrame.popOperand();
                 if (value1 == value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                     //The loop is going to increment it by one after this runs
@@ -142,8 +142,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 break;
             }
             case op_if_icmpgt: {
-                int value1 = currentFrame.popOperand();
                 int value2 = currentFrame.popOperand();
+                int value1 = currentFrame.popOperand();
                 if (value1 > value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                     //The loop is going to increment it by one after this runs
@@ -151,8 +151,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 }
             }
             case op_if_icmplt: {
-                int value1 = currentFrame.popOperand();
                 int value2 = currentFrame.popOperand();
+                int value1 = currentFrame.popOperand();
                 if (value1 < value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                     //The loop is going to increment it by one after this runs
@@ -162,8 +162,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
             }
 
             case op_if_icmple: {
-                int value1 = currentFrame.popOperand();
                 int value2 = currentFrame.popOperand();
+                int value1 = currentFrame.popOperand();
                 if (value1 <= value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                     //The loop is going to increment it by one after this runs
@@ -173,8 +173,8 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
             }
 
             case op_if_icmpge: {
-                int value1 = currentFrame.popOperand();
                 int value2 = currentFrame.popOperand();
+                int value1 = currentFrame.popOperand();
                 if (value1 >= value2) {
                     int offset = constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
                     //The loop is going to increment it by one after this runs
