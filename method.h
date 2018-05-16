@@ -20,7 +20,7 @@ private:
 
     Code *code;
     std::vector<Instruction> instructions;
-    std::vector<BasicBlock *> basicBlocks;
+    std::map<int, BasicBlock *> basicBlocks;
 
     static short constructOffset(unsigned char one, unsigned char two) {
         return (short) (((unsigned short) (one << 8)) | two);
@@ -160,11 +160,7 @@ private:
     }
 
     BasicBlock *findBasicBlockWithAddress(int address) {
-        for (auto block : basicBlocks) {
-            if (block->getStartingAddress() == address)
-                return block;
-        }
-        return nullptr;
+        return basicBlocks[address];
     }
 
     void buildBasicBlocks(int instructionIndex) {
@@ -181,7 +177,7 @@ private:
 //                case op_invokestatic:
 //                case op_invokespecial:
                 case op_goto: {
-                    basicBlocks.emplace_back(current);
+                    basicBlocks[current->getStartingAddress()] = current;
                     current = nullptr;
                     int jumpToAddress = instruction.getByteCodeIndex() +
                                         constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
@@ -202,7 +198,7 @@ private:
                 case op_ifge:
                 case op_ifgt:
                 case op_ifle: {
-                    basicBlocks.emplace_back(current);
+                    basicBlocks[current->getStartingAddress()] = current;
                     current = nullptr;
 
                     int jumpToAddress = instruction.getByteCodeIndex() +
@@ -229,12 +225,12 @@ private:
         }
 
         if (current != nullptr)
-            basicBlocks.emplace_back(current);
+            basicBlocks[current->getStartingAddress()] = current;
     }
 
     void linkBasicBlocks() {
-        for (int i = 0; i < basicBlocks.size(); i++) {
-            BasicBlock *block = basicBlocks[i];
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            BasicBlock *block = it->second;
             Instruction instruction = block->getInstructions().back();
             switch (instruction.getOpCode()) {
                 case op_goto: {
