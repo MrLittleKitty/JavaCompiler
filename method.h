@@ -6,6 +6,7 @@
 #include "instruction.h"
 #include "code.h"
 #include "opcode.h"
+#include "basicblock.h"
 
 class Method {
 private:
@@ -19,6 +20,11 @@ private:
 
     Code *code;
     std::vector<Instruction> instructions;
+    std::vector<BasicBlock *> basicBlocks;
+
+    static short constructOffset(unsigned char one, unsigned char two) {
+        return (short) (((unsigned short) (one << 8)) | two);
+    }
 
     void parseDescriptor(std::string descriptor) {
 
@@ -145,6 +151,47 @@ private:
         }
     }
 
+    void buildBasicBlocks() {
+        BasicBlock *current = nullptr;
+        for (auto &instruction : instructions) {
+            if (current == nullptr)
+                current = new BasicBlock(instruction.getByteCodeIndex());
+
+            current->addInstruction(instruction);
+            switch (instruction.getOpCode()) {
+                case op_return:
+                case op_goto:
+                case op_invokevirtual:
+                case op_invokestatic:
+                case op_invokespecial:
+                case op_if_icmpeq:
+                case op_if_icmpne:
+                case op_if_icmplt:
+                case op_if_icmpge:
+                case op_if_icmpgt:
+                case op_if_icmple:
+                case op_ifeq:
+                case op_ifne:
+                case op_iflt:
+                case op_ifge:
+                case op_ifgt:
+                case op_ifle: {
+                    basicBlocks.emplace_back(current);
+                    current = nullptr;
+                    break;
+                }
+                default: {
+                    //Do nothing unless it is a control flow instruction
+                    break;
+                }
+            }
+        }
+    }
+
+    void linkBasicBlocks() {
+
+    }
+
 public:
     Method(std::string name, std::string descriptor, Code *byteCode, std::vector<std::string> qualifiers)
             : name(name), descriptor(descriptor), code(byteCode) {
@@ -167,6 +214,12 @@ public:
 
         //Parse the bytecode into instruction objects
         parseByteCode(code->getByteCode(), code->getSize());
+
+        //Build basic blocks from the instruction objects
+        buildBasicBlocks();
+
+        //Link the basic blocks together
+        linkBasicBlocks();
     }
 
     std::string getName() const {
