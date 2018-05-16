@@ -31,6 +31,10 @@ public:
     int getStartingAddress() const {
         return startingAddress;
     }
+
+    std::vector<Instruction> &getInstructions() {
+        return instructions;
+    }
 };
 
 #endif //JAVACOMPILER_BASICBLOCK_H

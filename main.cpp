@@ -5,7 +5,7 @@
 
 int main() {
 
-    Class *c = parseClassFile("Test5.class");
+    Class *c = parseClassFile("Test1.class");
 
     runProgram(c);
 

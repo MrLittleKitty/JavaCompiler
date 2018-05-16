@@ -26,6 +26,14 @@ private:
         return (short) (((unsigned short) (one << 8)) | two);
     }
 
+    static int getIndexOfByteCode(std::vector<Instruction> &instructions, int byteCodeIndex) {
+        for (int i = 0; i < instructions.size(); i++) {
+            if (instructions[i].getByteCodeIndex() == byteCodeIndex)
+                return i;
+        }
+        return -1;
+    }
+
     void parseDescriptor(std::string descriptor) {
 
         int index = 0;
@@ -151,19 +159,37 @@ private:
         }
     }
 
-    void buildBasicBlocks() {
+    BasicBlock *findBasicBlockWithAddress(int address) {
+        for (auto block : basicBlocks) {
+            if (block->getStartingAddress() == address)
+                return block;
+        }
+        return nullptr;
+    }
+
+    void buildBasicBlocks(int instructionIndex) {
         BasicBlock *current = nullptr;
-        for (auto &instruction : instructions) {
+        for (; instructionIndex < instructions.size(); instructionIndex++) {
+            Instruction instruction = instructions[instructionIndex];
             if (current == nullptr)
                 current = new BasicBlock(instruction.getByteCodeIndex());
 
             current->addInstruction(instruction);
             switch (instruction.getOpCode()) {
-                case op_return:
-                case op_goto:
-                case op_invokevirtual:
-                case op_invokestatic:
-                case op_invokespecial:
+//                case op_return:
+//                case op_invokevirtual:
+//                case op_invokestatic:
+//                case op_invokespecial:
+                case op_goto: {
+                    basicBlocks.emplace_back(current);
+                    current = nullptr;
+                    int jumpToAddress = instruction.getByteCodeIndex() +
+                                        constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    if (findBasicBlockWithAddress(jumpToAddress) == nullptr) {
+                        buildBasicBlocks(getIndexOfByteCode(instructions, jumpToAddress));
+                    }
+                    return;
+                }
                 case op_if_icmpeq:
                 case op_if_icmpne:
                 case op_if_icmplt:
@@ -178,7 +204,22 @@ private:
                 case op_ifle: {
                     basicBlocks.emplace_back(current);
                     current = nullptr;
-                    break;
+
+                    int jumpToAddress = instruction.getByteCodeIndex() +
+                                        constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    if (findBasicBlockWithAddress(jumpToAddress) == nullptr) {
+                        buildBasicBlocks(getIndexOfByteCode(instructions, jumpToAddress));
+                    }
+
+                    int index = instructionIndex + 1;
+                    if (index < instructions.size()) {
+                        Instruction next = instructions[index];
+                        int fallThroughAddress = next.getByteCodeIndex();
+                        if (findBasicBlockWithAddress(fallThroughAddress) == nullptr) {
+                            buildBasicBlocks(getIndexOfByteCode(instructions, fallThroughAddress));
+                        }
+                    }
+                    return;
                 }
                 default: {
                     //Do nothing unless it is a control flow instruction
@@ -186,10 +227,70 @@ private:
                 }
             }
         }
+
+        if (current != nullptr)
+            basicBlocks.emplace_back(current);
     }
 
     void linkBasicBlocks() {
+        for (int i = 0; i < basicBlocks.size(); i++) {
+            BasicBlock *block = basicBlocks[i];
+            Instruction instruction = block->getInstructions().back();
+            switch (instruction.getOpCode()) {
+                case op_goto: {
+                    int jumpToAddress = instruction.getByteCodeIndex() +
+                                        constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    BasicBlock *successor = findBasicBlockWithAddress(jumpToAddress);
+                    if (successor == nullptr)
+                        printf("Attempted to find a basic block with address that isn't valid from goto");
+                    else {
+                        successor->addPredecessor(block);
+                        block->addSuccessor(successor);
+                    }
+                    break;
+                }
+//                case op_invokevirtual:
+//                case op_invokestatic:
+//                case op_invokespecial:
+                case op_if_icmpeq:
+                case op_if_icmpne:
+                case op_if_icmplt:
+                case op_if_icmpge:
+                case op_if_icmpgt:
+                case op_if_icmple:
+                case op_ifeq:
+                case op_ifne:
+                case op_iflt:
+                case op_ifge:
+                case op_ifgt:
+                case op_ifle: {
+                    int jumpToAddress = instruction.getByteCodeIndex() +
+                                        constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    BasicBlock *successor1 = findBasicBlockWithAddress(jumpToAddress);
+                    if (successor1 == nullptr)
+                        printf("Attempted to find a basic block with address that isn't valid for jump");
+                    else {
+                        successor1->addPredecessor(block);
+                        block->addSuccessor(successor1);
+                    }
 
+                    int index = getIndexOfByteCode(instructions, instruction.getByteCodeIndex()) + 1;
+                    if (index < instructions.size()) {
+                        BasicBlock *successor2 = findBasicBlockWithAddress(instructions[index].getByteCodeIndex());
+                        if (successor2 == nullptr)
+                            printf("Attempted to find a basic block with address that isn't valid for fallthrough");
+                        else {
+                            successor2->addPredecessor(block);
+                            block->addSuccessor(successor2);
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+        }
     }
 
 public:
@@ -216,7 +317,7 @@ public:
         parseByteCode(code->getByteCode(), code->getSize());
 
         //Build basic blocks from the instruction objects
-        buildBasicBlocks();
+        buildBasicBlocks(0);
 
         //Link the basic blocks together
         linkBasicBlocks();
