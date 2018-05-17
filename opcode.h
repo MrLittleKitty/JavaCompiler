@@ -54,4 +54,6 @@
 
 #define op_iinc 132
 
+#define phi (-1)
+
 #endif //JAVACOMPILER_OPCODE_H

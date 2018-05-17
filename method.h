@@ -289,6 +289,10 @@ private:
         }
     }
 
+    void createSSA() {
+
+    }
+
 public:
     Method(std::string name, std::string descriptor, Code *byteCode, std::vector<std::string> qualifiers)
             : name(name), descriptor(descriptor), code(byteCode) {
@@ -317,6 +321,9 @@ public:
 
         //Link the basic blocks together
         linkBasicBlocks();
+
+        //Translate the java bytecode instructions into our type of instruction
+        createSSA();
     }
 
     std::string getName() const {
