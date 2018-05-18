@@ -3,6 +3,8 @@
 
 #include <string>
 #include <utility>
+#include <set>
+#include <map>
 #include "instruction.h"
 #include "code.h"
 #include "opcode.h"
@@ -290,7 +292,26 @@ private:
     }
 
     void createSSA() {
+        //Shows how to place the phi functions and rename variables:
+        // http://www.cs.colostate.edu/~mstrout/CS553Fall06/slides/lecture17-SSA.pdf
 
+        std::map<int, std::set<BasicBlock*>*> dominanceFrontier;
+        std::map<int, BasicBlock *> idom;
+
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            BasicBlock *b = it->second;
+            if (b->getPredecessors().size() >= 2) {
+                for (auto p : b->getPredecessors()) {
+                    BasicBlock *runner = p;
+                    while (runner != idom[b->getStartingAddress()]) {
+                        if(dominanceFrontier.count(runner->getStartingAddress()) == 0)
+                            dominanceFrontier[runner->getStartingAddress()] = new std::set<BasicBlock*>();
+                        dominanceFrontier[runner->getStartingAddress()]->emplace(b);
+                        runner = idom[runner->getStartingAddress()];
+                    }
+                }
+            }
+        }
     }
 
 public:

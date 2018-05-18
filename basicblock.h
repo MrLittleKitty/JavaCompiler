@@ -35,6 +35,14 @@ public:
     std::vector<Instruction> &getInstructions() {
         return instructions;
     }
+
+    std::vector<BasicBlock *> &getPredecessors() {
+        return predecessors;
+    }
+
+    std::vector<BasicBlock *> &getSuccessors() {
+        return successors;
+    }
 };
 
 #endif //JAVACOMPILER_BASICBLOCK_H

@@ -5,10 +5,10 @@
 
 int main() {
 
-    Class *c1 = parseClassFile("Test1.class");
-    runProgram(c1);
-
-    printf("\n---\n");
+//    Class *c1 = parseClassFile("Test1.class");
+//    runProgram(c1);
+//
+//    printf("\n---\n");
 
 //    Class *c2 = parseClassFile("Test2.class");
 //    runProgram(c2);
@@ -25,10 +25,10 @@ int main() {
 //
 //    printf("\n---\n");
 //
-//    Class *c5 = parseClassFile("Test5.class");
-//    runProgram(c5);
-//
-//    printf("\n---\n");
+    Class *c5 = parseClassFile("Test5.class");
+    runProgram(c5);
+
+    printf("\n---\n");
 
     return 0;
 }
