@@ -4,7 +4,9 @@
 #include <string>
 #include <utility>
 #include <set>
+#include <stack>
 #include <map>
+#include <algorithm>
 #include "instruction.h"
 #include "code.h"
 #include "opcode.h"
@@ -291,12 +293,85 @@ private:
         }
     }
 
+    void reversePostOrder(BasicBlock *block, std::stack<BasicBlock *> &reversePost) {
+        for (auto b : block->getSuccessors()) {
+            reversePostOrder(b, reversePost);
+        }
+
+        reversePost.push(block);
+    }
+
     void createSSA() {
         //Shows how to place the phi functions and rename variables:
         // http://www.cs.colostate.edu/~mstrout/CS553Fall06/slides/lecture17-SSA.pdf
+        std::stack<BasicBlock *> reversePostOrderStack;
+        std::vector<BasicBlock *> reversPostOrderList;
+        reversePostOrder(basicBlocks[0], reversePostOrderStack);
+        while (!reversePostOrderStack.empty()) {
+            reversPostOrderList.emplace_back(reversePostOrderStack.top());
+            reversePostOrderStack.pop();
+        }
 
-        std::map<int, std::set<BasicBlock*>*> dominanceFrontier;
+        std::map<int, std::set<BasicBlock *> *> dominatorTree;
+        auto initial = new std::set<BasicBlock *>();
+        initial->insert(basicBlocks[0]);
+        dominatorTree[0] = initial;
+
+        auto allBlocks = new std::set<BasicBlock *>();
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            allBlocks->insert(it->second);
+        }
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            BasicBlock *b = it->second;
+            if (b->getStartingAddress() != 0) {
+                dominatorTree[b->getStartingAddress()] = new std::set<BasicBlock *>(*allBlocks);
+            }
+        }
+
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (auto block : reversPostOrderList) {
+                std::set<BasicBlock *> *newSet = nullptr;
+                auto predecessors = block->getPredecessors();
+                if (!predecessors.empty()) {
+                    newSet = new std::set<BasicBlock *>(*dominatorTree[predecessors[0]->getStartingAddress()]);
+                    for (int i = 1; i < predecessors.size(); i++) {
+                        auto other = dominatorTree[predecessors[i]->getStartingAddress()];
+                        auto intersection = new std::set<BasicBlock *>();
+                        set_intersection(newSet->begin(), newSet->end(), other->begin(), other->end(),
+                                         std::inserter(*intersection, intersection->begin()));
+                        delete newSet;
+                        newSet = intersection;
+                    }
+                }
+
+                if (newSet == nullptr)
+                    newSet = new std::set<BasicBlock *>();
+
+                newSet->insert(block);
+                if (*newSet != *dominatorTree[block->getStartingAddress()]) {
+                    delete dominatorTree[block->getStartingAddress()];
+                    dominatorTree[block->getStartingAddress()] = newSet;
+                    changed = true;
+                } else
+                    delete newSet;
+            }
+        }
+
+        std::map<int, std::set<BasicBlock *> *> dominanceFrontier;
         std::map<int, BasicBlock *> idom;
+
+        //Every node is in its own dominance frontier so initialize the frontiers with themselves
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            BasicBlock *b = it->second;
+            if (b->getPredecessors().size() >= 2) {
+                auto s = new std::set<BasicBlock *>();
+                s->insert(b);
+                dominanceFrontier[b->getStartingAddress()] = s;
+                idom[b->getStartingAddress()] = b;
+            }
+        }
 
         for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
             BasicBlock *b = it->second;
@@ -304,9 +379,7 @@ private:
                 for (auto p : b->getPredecessors()) {
                     BasicBlock *runner = p;
                     while (runner != idom[b->getStartingAddress()]) {
-                        if(dominanceFrontier.count(runner->getStartingAddress()) == 0)
-                            dominanceFrontier[runner->getStartingAddress()] = new std::set<BasicBlock*>();
-                        dominanceFrontier[runner->getStartingAddress()]->emplace(b);
+                        dominanceFrontier[runner->getStartingAddress()]->insert(b);
                         runner = idom[runner->getStartingAddress()];
                     }
                 }
@@ -331,7 +404,6 @@ public:
         }
 
         //Parse the descriptor to get type information
-
         parseDescriptor(descriptor);
 
         //Parse the bytecode into instruction objects
