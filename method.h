@@ -293,9 +293,11 @@ private:
         }
     }
 
-    void reversePostOrder(BasicBlock *block, std::stack<BasicBlock *> &reversePost) {
+    void reversePostOrder(BasicBlock *block, std::stack<BasicBlock *> &reversePost, std::set<int> &visited) {
+        visited.insert(block->getStartingAddress());
         for (auto b : block->getSuccessors()) {
-            reversePostOrder(b, reversePost);
+            if (visited.count(b->getStartingAddress()) == 0)
+                reversePostOrder(b, reversePost, visited);
         }
 
         reversePost.push(block);
@@ -306,7 +308,8 @@ private:
         // http://www.cs.colostate.edu/~mstrout/CS553Fall06/slides/lecture17-SSA.pdf
         std::stack<BasicBlock *> reversePostOrderStack;
         std::vector<BasicBlock *> reversPostOrderList;
-        reversePostOrder(basicBlocks[0], reversePostOrderStack);
+        std::set<int> visited;
+        reversePostOrder(basicBlocks[0], reversePostOrderStack, visited);
         while (!reversePostOrderStack.empty()) {
             reversPostOrderList.emplace_back(reversePostOrderStack.top());
             reversePostOrderStack.pop();
