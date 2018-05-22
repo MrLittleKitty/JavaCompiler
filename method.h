@@ -365,15 +365,39 @@ private:
         std::map<int, std::set<BasicBlock *> *> dominanceFrontier;
         std::map<int, BasicBlock *> idom;
 
+        //Compute immediate dominators
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            BasicBlock *b = it->second;
+            //Starting block has no immediate dominator
+            if (b->getStartingAddress() != 0) {
+                for (BasicBlock *dominator : *dominatorTree[b->getStartingAddress()]) {
+                    if (b->getStartingAddress() != dominator->getStartingAddress()) {
+                        bool isIdom = true;
+                        for (BasicBlock *otherDominator : *dominatorTree[b->getStartingAddress()]) {
+                            if (otherDominator->getStartingAddress() != b->getStartingAddress() &&
+                                otherDominator->getStartingAddress() != dominator->getStartingAddress()) {
+                                if (dominatorTree[otherDominator->getStartingAddress()]->count(dominator) > 0) {
+                                    isIdom = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isIdom) {
+                            idom[b->getStartingAddress()] = dominator;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         //Every node is in its own dominance frontier so initialize the frontiers with themselves
         for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
             BasicBlock *b = it->second;
-            if (b->getPredecessors().size() >= 2) {
-                auto s = new std::set<BasicBlock *>();
-                s->insert(b);
-                dominanceFrontier[b->getStartingAddress()] = s;
-                idom[b->getStartingAddress()] = b;
-            }
+            auto s = new std::set<BasicBlock *>();
+            //s->insert(b);
+            dominanceFrontier[b->getStartingAddress()] = s;
         }
 
         for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
@@ -381,11 +405,28 @@ private:
             if (b->getPredecessors().size() >= 2) {
                 for (auto p : b->getPredecessors()) {
                     BasicBlock *runner = p;
-                    while (runner != idom[b->getStartingAddress()]) {
+                    while (runner->getStartingAddress() != idom[b->getStartingAddress()]->getStartingAddress()) {
                         dominanceFrontier[runner->getStartingAddress()]->insert(b);
                         runner = idom[runner->getStartingAddress()];
                     }
                 }
+            }
+        }
+
+        printf("Immediate dominators for method %s\n", this->name.c_str());
+        for (auto &it : idom) {
+            int blockAddress = it.first;
+            printf("Block %d is the immediate dominator of Block %d\n", it.second->getStartingAddress(),
+                   blockAddress);
+        }
+
+
+        printf("Dominance frontier for method %s\n", this->name.c_str());
+        for (auto &it : dominanceFrontier) {
+            int blockAddress = it.first;
+            for (auto dominator : *it.second) {
+                printf("Block %d is in the dominance frontier of Block %d\n", dominator->getStartingAddress(),
+                       blockAddress);
             }
         }
     }
