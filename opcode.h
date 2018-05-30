@@ -10,16 +10,16 @@
 #define op_iconst_5 8
 
 #define op_iload 21
-#define iload_0 0x1a
-#define iload_1 0x1b
-#define iload_2 0x1c
-#define iload_3 0x1d
+#define op_iload_0 0x1a
+#define op_iload_1 0x1b
+#define op_iload_2 0x1c
+#define op_iload_3 0x1d
 
 #define op_istore 54
-#define istore_0 0x3b
-#define istore_1 0x3c
-#define istore_2 0x3d
-#define istore_3 0x3e
+#define op_istore_0 0x3b
+#define op_istore_1 0x3c
+#define op_istore_2 0x3d
+#define op_istore_3 0x3e
 
 #define op_iadd 96
 
@@ -54,6 +54,6 @@
 
 #define op_iinc 132
 
-#define phi (-1)
+#define op_phi (unsigned char)255
 
 #endif //JAVACOMPILER_OPCODE_H

@@ -70,39 +70,39 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 break;
             }
 
-            case iload_0: {
+            case op_iload_0: {
                 currentFrame.pushOperand(currentFrame.getLocalVariable(0));
                 break;
             }
-            case iload_1: {
+            case op_iload_1: {
                 currentFrame.pushOperand(currentFrame.getLocalVariable(1));
                 break;
             }
-            case iload_2: {
+            case op_iload_2: {
                 currentFrame.pushOperand(currentFrame.getLocalVariable(2));
                 break;
             }
-            case iload_3: {
+            case op_iload_3: {
                 currentFrame.pushOperand(currentFrame.getLocalVariable(3));
                 break;
             }
 
-            case istore_0: {
+            case op_istore_0: {
                 int value = currentFrame.popOperand();
                 currentFrame.setLocalVariable(0, value);
                 break;
             }
-            case istore_1: {
+            case op_istore_1: {
                 int value = currentFrame.popOperand();
                 currentFrame.setLocalVariable(1, value);
                 break;
             }
-            case istore_2: {
+            case op_istore_2: {
                 int value = currentFrame.popOperand();
                 currentFrame.setLocalVariable(2, value);
                 break;
             }
-            case istore_3: {
+            case op_istore_3: {
                 int value = currentFrame.popOperand();
                 currentFrame.setLocalVariable(3, value);
                 break;

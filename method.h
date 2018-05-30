@@ -7,10 +7,12 @@
 #include <stack>
 #include <map>
 #include <algorithm>
+#include <queue>
 #include "instruction.h"
 #include "code.h"
 #include "opcode.h"
 #include "basicblock.h"
+#include "phiinstruction.h"
 
 class Method {
 private:
@@ -103,14 +105,14 @@ private:
                 case op_return:
                 case op_iadd:
                 case op_aload_0:
-                case iload_0:
-                case iload_1:
-                case iload_2:
-                case iload_3:
-                case istore_0:
-                case istore_1:
-                case istore_2:
-                case istore_3: {
+                case op_iload_0:
+                case op_iload_1:
+                case op_iload_2:
+                case op_iload_3:
+                case op_istore_0:
+                case op_istore_1:
+                case op_istore_2:
+                case op_istore_3: {
                     instructions.emplace_back(Instruction(i, opCode));
                     break;
                 }
@@ -303,6 +305,47 @@ private:
         reversePost.push(block);
     }
 
+    bool containsAssignment(BasicBlock *block, int variableNumber) {
+        for (auto &instruction : block->getInstructions()) {
+            if (instruction.getOpCode() == op_istore_0) {
+                if (variableNumber == 0)
+                    return true;
+            } else if (instruction.getOpCode() == op_istore_1) {
+                if (variableNumber == 1)
+                    return true;
+            } else if (instruction.getOpCode() == op_istore_2) {
+                if (variableNumber == 2)
+                    return true;
+            } else if (instruction.getOpCode() == op_istore_3) {
+                if (variableNumber == 3)
+                    return true;
+            } else if (instruction.getOpCode() == op_istore) {
+                int var = (int) instruction.getOperands()[0];
+                if (var == variableNumber)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    std::vector<BasicBlock *> getAllBlocksWithAssignment(int variableNumber) {
+        std::vector<BasicBlock *> blocks;
+        for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
+            if (containsAssignment(it->second, variableNumber))
+                blocks.emplace_back(it->second);
+        }
+        return blocks;
+    }
+
+//    bool hasPhiIntruction(BasicBlock *block) {
+//        for (auto &instruction : block->getInstructions()) {
+//            if (instruction.getOpCode() == op_phi)
+//                return true;
+//        }
+//        return false;
+//    }
+
     void createSSA() {
         //Shows how to place the phi functions and rename variables:
         // http://www.cs.colostate.edu/~mstrout/CS553Fall06/slides/lecture17-SSA.pdf
@@ -427,6 +470,34 @@ private:
             for (auto dominator : *it.second) {
                 printf("Block %d is in the dominance frontier of Block %d\n", dominator->getStartingAddress(),
                        blockAddress);
+            }
+        }
+
+        //Now we place the phi functions accordingly
+        for (int variable = 0; variable < this->code->getMaxLocals(); variable++) {
+            std::queue<int> worklist;
+            std::set<int> everOnWorklist;
+            std::set<int> alreadyHasPhiFunc;
+            //Add all blocks containing an assignment to the worklist and to the ever on worklist
+            for (auto block : getAllBlocksWithAssignment(variable)) {
+                worklist.push(block->getStartingAddress());
+                everOnWorklist.insert(block->getStartingAddress());
+            }
+
+            while (!worklist.empty()) {
+                BasicBlock *n = basicBlocks[worklist.front()];
+                worklist.pop();
+                for (BasicBlock *d : *dominanceFrontier[n->getStartingAddress()]) {
+                    if (alreadyHasPhiFunc.count(d->getStartingAddress()) == 0) {
+                        auto *phi = new PhiInstruction(variable);
+
+                        alreadyHasPhiFunc.insert(d->getStartingAddress());
+                        if (everOnWorklist.count(d->getStartingAddress()) == 0) {
+                            worklist.push(d->getStartingAddress());
+                            everOnWorklist.insert(d->getStartingAddress());
+                        }
+                    }
+                }
             }
         }
     }
