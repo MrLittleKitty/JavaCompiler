@@ -489,8 +489,7 @@ private:
                 worklist.pop();
                 for (BasicBlock *d : *dominanceFrontier[n->getStartingAddress()]) {
                     if (alreadyHasPhiFunc.count(d->getStartingAddress()) == 0) {
-                        auto *phi = new PhiInstruction(variable);
-
+                        d->getInstructions().(d->getInstructions().begin(), PhiInstruction(variable));
                         alreadyHasPhiFunc.insert(d->getStartingAddress());
                         if (everOnWorklist.count(d->getStartingAddress()) == 0) {
                             worklist.push(d->getStartingAddress());
@@ -500,6 +499,8 @@ private:
                 }
             }
         }
+
+        //Now we go through and rename all the variables (actually we create new ones)
     }
 
 public:
