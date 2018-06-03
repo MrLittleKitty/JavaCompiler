@@ -6,12 +6,20 @@
 
 class PhiInstruction : public Instruction {
 private:
-    int variableNumber;
+    std::map<int, int> blockAddressToVariableNumber;
 public:
-    PhiInstruction(int variableNumber) : Instruction(-1, op_phi), variableNumber(variableNumber) {}
+    PhiInstruction() : Instruction(-1, op_phi) {}
 
-    int getVariableNumber() const {
-        return variableNumber;
+    void addToPhiFunc(int blockAddress, int variableNumber) {
+        blockAddressToVariableNumber[blockAddress] = variableNumber;
+    }
+
+    int getVariableNumber(int blockAddress) {
+        return blockAddressToVariableNumber[blockAddress];
+    }
+
+    int getNumberOfVarsInPhiFunction() const {
+        return blockAddressToVariableNumber.size();
     }
 };
 

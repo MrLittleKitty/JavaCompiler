@@ -346,6 +346,58 @@ private:
 //        return false;
 //    }
 
+//#define op_iload 21
+//#define op_iload_0 0x1a
+//#define op_iload_1 0x1b
+//#define op_iload_2 0x1c
+//#define op_iload_3 0x1d
+//
+//#define op_istore 54
+//#define op_istore_0 0x3b
+//#define op_istore_1 0x3c
+//#define op_istore_2 0x3d
+//#define op_istore_3 0x3e
+
+    Instruction createStoreInstruction(int varNumber, int bytecodeIndex) {
+        if (varNumber == 0)
+            return Instruction(bytecodeIndex, op_istore_0);
+        else if (varNumber == 1)
+            return Instruction(bytecodeIndex, op_istore_1);
+        else if (varNumber == 2)
+            return Instruction(bytecodeIndex, op_istore_2);
+        else if (varNumber == 3)
+            return Instruction(bytecodeIndex, op_istore_3);
+        else {
+            std::vector<unsigned char> operands;
+            operands.emplace_back((unsigned char) varNumber);
+            return Instruction(bytecodeIndex, op_istore, operands);
+        }
+    }
+
+    Instruction createLoadInstruction(int varNumber, int bytecodeIndex) {
+        if (varNumber == 0)
+            return Instruction(bytecodeIndex, op_iload_0);
+        else if (varNumber == 1)
+            return Instruction(bytecodeIndex, op_iload_1);
+        else if (varNumber == 2)
+            return Instruction(bytecodeIndex, op_iload_2);
+        else if (varNumber == 3)
+            return Instruction(bytecodeIndex, op_iload_3);
+        else {
+            std::vector<unsigned char> operands;
+            operands.emplace_back((unsigned char) varNumber);
+            return Instruction(bytecodeIndex, op_iload, operands);
+        }
+    }
+
+    void rename(BasicBlock *block, std::map<int, std::set<BasicBlock *> *> &dominanceFrontier, std::set<int> &visited,
+                int &localVarCounter) {
+        if (visited.count(block->getStartingAddress()) != 0)
+            return;
+
+
+    }
+
     void createSSA() {
         //Shows how to place the phi functions and rename variables:
         // http://www.cs.colostate.edu/~mstrout/CS553Fall06/slides/lecture17-SSA.pdf
@@ -487,9 +539,12 @@ private:
             while (!worklist.empty()) {
                 BasicBlock *n = basicBlocks[worklist.front()];
                 worklist.pop();
+                PhiInstruction phiInst;
                 for (BasicBlock *d : *dominanceFrontier[n->getStartingAddress()]) {
                     if (alreadyHasPhiFunc.count(d->getStartingAddress()) == 0) {
-                        d->getInstructions().(d->getInstructions().begin(), PhiInstruction(variable));
+
+                        phiInst.addToPhiFunc(d->getStartingAddress(), variable);
+
                         alreadyHasPhiFunc.insert(d->getStartingAddress());
                         if (everOnWorklist.count(d->getStartingAddress()) == 0) {
                             worklist.push(d->getStartingAddress());
@@ -497,10 +552,16 @@ private:
                         }
                     }
                 }
+
+                if (phiInst.getNumberOfVarsInPhiFunction() > 0)
+                    n->getInstructions().insert(n->getInstructions().begin(), phiInst);
             }
         }
 
         //Now we go through and rename all the variables (actually we create new ones)
+        std::set<int> visitedRenaming;
+        int renamingCounter = 0;
+        rename(basicBlocks[0], dominanceFrontier, visitedRenaming, renamingCounter);
     }
 
 public:

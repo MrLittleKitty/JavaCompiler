@@ -5,7 +5,6 @@
 
 class Instruction {
 private:
-    int instructionType;
     int byteCodeIndex;
     unsigned char opCode;
     std::vector<unsigned char> operands;
@@ -18,10 +17,6 @@ public:
     Instruction(int byteCodeIndex, unsigned char op_code)
             : byteCodeIndex(byteCodeIndex), opCode(op_code) {
 
-    }
-
-    int getInstructionType() const {
-        return instructionType;
     }
 
     int getOpCode() const {
