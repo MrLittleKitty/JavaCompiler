@@ -21,6 +21,10 @@ public:
     int getNumberOfVarsInPhiFunction() const {
         return blockAddressToVariableNumber.size();
     }
+
+    std::map<int, int> &viewMap() {
+        return blockAddressToVariableNumber;
+    };
 };
 
 #endif //JAVACOMPILER_PHIINSTRUCTION_H

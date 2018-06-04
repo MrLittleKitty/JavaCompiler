@@ -319,7 +319,7 @@ private:
             } else if (instruction.getOpCode() == op_istore_3) {
                 if (variableNumber == 3)
                     return true;
-            } else if (instruction.getOpCode() == op_istore) {
+            } else if (instruction.getOpCode() == op_istore || instruction.getOpCode() == op_iinc) {
                 int var = (int) instruction.getOperands()[0];
                 if (var == variableNumber)
                     return true;
@@ -539,11 +539,17 @@ private:
             while (!worklist.empty()) {
                 BasicBlock *n = basicBlocks[worklist.front()];
                 worklist.pop();
-                PhiInstruction phiInst;
+
                 for (BasicBlock *d : *dominanceFrontier[n->getStartingAddress()]) {
                     if (alreadyHasPhiFunc.count(d->getStartingAddress()) == 0) {
 
-                        phiInst.addToPhiFunc(d->getStartingAddress(), variable);
+                        PhiInstruction phiInst;
+                        phiInst.addToPhiFunc(n->getStartingAddress(), variable);
+                        d->getInstructions().insert(d->getInstructions().begin(), phiInst);
+
+                        printf("Adding phi instruction to block %d from block %d for variable %d \n",
+                               d->getStartingAddress(),
+                               n->getStartingAddress(), variable);
 
                         alreadyHasPhiFunc.insert(d->getStartingAddress());
                         if (everOnWorklist.count(d->getStartingAddress()) == 0) {
@@ -552,16 +558,13 @@ private:
                         }
                     }
                 }
-
-                if (phiInst.getNumberOfVarsInPhiFunction() > 0)
-                    n->getInstructions().insert(n->getInstructions().begin(), phiInst);
             }
         }
 
         //Now we go through and rename all the variables (actually we create new ones)
-        std::set<int> visitedRenaming;
-        int renamingCounter = 0;
-        rename(basicBlocks[0], dominanceFrontier, visitedRenaming, renamingCounter);
+//        std::set<int> visitedRenaming;
+//        int renamingCounter = 0;
+//        rename(basicBlocks[0], dominanceFrontier, visitedRenaming, renamingCounter);
     }
 
 public:

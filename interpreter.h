@@ -286,6 +286,10 @@ static void runInstructions(Class *program, std::vector<Instruction> &instructio
                 break;
             }
 
+            default: {
+                printf("Attempted to interpret invalid opCode: %d. opCode ignored.", instruction.getOpCode());
+                break;
+            }
         }
     }
 }
