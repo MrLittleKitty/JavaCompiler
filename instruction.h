@@ -19,6 +19,8 @@ public:
 
     }
 
+    virtual ~Instruction() {}
+
     int getOpCode() const {
         return opCode;
     }

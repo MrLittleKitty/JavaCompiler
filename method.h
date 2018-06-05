@@ -176,9 +176,16 @@ private:
             if (current == nullptr)
                 current = new BasicBlock(instruction.getByteCodeIndex());
 
-            current->addInstruction(new Instruction(instruction.getByteCodeIndex(),
-                                                    (unsigned char) instruction.getOpCode(),
-                                                    instruction.getOperands()));
+            if (instruction.getOpCode() == op_iinc) {
+                auto vec = incInstructionAlternative(instruction.getOperands()[0], instruction.getOperands()[1],
+                                                     instruction.getByteCodeIndex());
+                for (Instruction *v : vec) {
+                    current->addInstruction(v);
+                }
+            } else
+                current->addInstruction(new Instruction(instruction.getByteCodeIndex(),
+                                                        (unsigned char) instruction.getOpCode(),
+                                                        instruction.getOperands()));
             switch (instruction.getOpCode()) {
 //                case op_return:
 //                case op_invokevirtual:
@@ -348,18 +355,6 @@ private:
 //        return false;
 //    }
 
-//#define op_iload 21
-//#define op_iload_0 0x1a
-//#define op_iload_1 0x1b
-//#define op_iload_2 0x1c
-//#define op_iload_3 0x1d
-//
-//#define op_istore 54
-//#define op_istore_0 0x3b
-//#define op_istore_1 0x3c
-//#define op_istore_2 0x3d
-//#define op_istore_3 0x3e
-
     Instruction *createStoreInstruction(int varNumber, int bytecodeIndex) {
         if (varNumber == 0)
             return new Instruction(bytecodeIndex, op_istore_0);
@@ -393,11 +388,41 @@ private:
     }
 
     int getLHSVariable(Instruction *instruction) {
-
+        if (instruction->getOpCode() == op_istore_0)
+            return 0;
+        else if (instruction->getOpCode() == op_istore_1)
+            return 1;
+        else if (instruction->getOpCode() == op_istore_2)
+            return 2;
+        else if (instruction->getOpCode() == op_istore_3)
+            return 3;
+        else if (instruction->getOpCode() == op_istore)
+            return instruction->getOperands()[0];
     }
 
     int getRHSVariable(Instruction *instruction) {
+        if (instruction->getOpCode() == op_iload_0)
+            return 0;
+        else if (instruction->getOpCode() == op_iload_1)
+            return 1;
+        else if (instruction->getOpCode() == op_iload_2)
+            return 2;
+        else if (instruction->getOpCode() == op_iload_3)
+            return 3;
+        else if (instruction->getOpCode() == op_iload)
+            return instruction->getOperands()[0];
+    }
 
+    std::vector<Instruction *>
+    incInstructionAlternative(unsigned char varNumber, unsigned char value, int bytecodeIndex) {
+        std::vector<Instruction *> vec;
+        std::vector<unsigned char> operands;
+        operands.emplace_back(value);
+        vec.emplace_back(new Instruction(bytecodeIndex, op_bipush, operands));
+        vec.emplace_back(createLoadInstruction(varNumber, bytecodeIndex));
+        vec.emplace_back(new Instruction(bytecodeIndex, op_iadd));
+        vec.emplace_back(createStoreInstruction(varNumber, bytecodeIndex));
+        return vec;
     }
 
     int getTopOfStack(std::map<int, std::stack<int> *> &variableStacks, int variable, int &counter) {
@@ -414,6 +439,16 @@ private:
         counter++;
     }
 
+    Instruction *
+    replaceLHS(Instruction *instruction, std::map<int, std::stack<int> *> &variableStacks, int oldLHS, int &counter) {
+        return createStoreInstruction(getTopOfStack(variableStacks, oldLHS, counter), instruction->getByteCodeIndex());
+    }
+
+    Instruction *
+    replaceRHS(Instruction *instruction, std::map<int, std::stack<int> *> &variableStacks, int oldRHS, int &counter) {
+        return createLoadInstruction(getTopOfStack(variableStacks, oldRHS, counter), instruction->getByteCodeIndex());
+    }
+
     void rename(BasicBlock *block, std::map<int, std::set<BasicBlock *> *> &dominanceFrontier,
                 std::map<int, std::stack<int> *> &variableStacks, std::set<int> &visited, int &localVarCounter) {
         if (visited.count(block->getStartingAddress()) != 0)
@@ -428,14 +463,48 @@ private:
             phi->setLHS(getTopOfStack(variableStacks, phi->getLHS(), localVarCounter));
         }
 
-        for (Instruction *instruction : block->getInstructions()) {
+        for (int i = 0; i < block->getInstructions().size(); i++) {
+            Instruction *instruction = block->getInstructions()[i];
             if (instruction->getOpCode() == op_phi)
                 continue; //Skip phis when we are processing instructions because we are processing "statements"
 
-
-            if (getLHSVariable(instruction) != -1) {
-
+            int rhs = getRHSVariable(instruction);
+            if (rhs != -1) {
+                Instruction *inst = replaceRHS(instruction, variableStacks, rhs, localVarCounter);
+                delete instruction;
+                instruction = inst;
+                block->getInstructions()[i] = inst;
             }
+
+            int lhs = getLHSVariable(instruction);
+            if (lhs != -1) {
+                genName(variableStacks, lhs, localVarCounter);
+                Instruction *inst = replaceLHS(instruction, variableStacks, lhs, localVarCounter);
+                delete instruction;
+                block->getInstructions()[i] = inst;
+            }
+        }
+    }
+
+    void printInstructions(BasicBlock *block, std::set<int> &visitedSet) {
+        if (visitedSet.count(block->getStartingAddress()) > 0)
+            return;
+
+        visitedSet.insert(block->getStartingAddress());
+
+        printf("----Block %d----\n", block->getStartingAddress());
+        for (Instruction *inst : block->getInstructions()) {
+            auto cStr = getStringFromOpCode(inst->getOpCode()).c_str();
+            if (inst->getOpCode() == op_bipush || inst->getOpCode() == op_iload
+                || inst->getOpCode() == op_istore)
+                printf("%s %d\n", cStr, inst->getOperands()[0]);
+            else
+                printf("%s\n", cStr);
+        }
+        printf("\n");
+
+        for (BasicBlock *succ : block->getSuccessors()) {
+            printInstructions(succ, visitedSet);
         }
     }
 
@@ -549,22 +618,22 @@ private:
             }
         }
 
-        printf("Immediate dominators for method %s\n", this->name.c_str());
-        for (auto &it : idom) {
-            int blockAddress = it.first;
-            printf("Block %d is the immediate dominator of Block %d\n", it.second->getStartingAddress(),
-                   blockAddress);
-        }
-
-
-        printf("Dominance frontier for method %s\n", this->name.c_str());
-        for (auto &it : dominanceFrontier) {
-            int blockAddress = it.first;
-            for (auto dominator : *it.second) {
-                printf("Block %d is in the dominance frontier of Block %d\n", dominator->getStartingAddress(),
-                       blockAddress);
-            }
-        }
+//        printf("Immediate dominators for method %s\n", this->name.c_str());
+//        for (auto &it : idom) {
+//            int blockAddress = it.first;
+//            printf("Block %d is the immediate dominator of Block %d\n", it.second->getStartingAddress(),
+//                   blockAddress);
+//        }
+//
+//
+//        printf("Dominance frontier for method %s\n", this->name.c_str());
+//        for (auto &it : dominanceFrontier) {
+//            int blockAddress = it.first;
+//            for (auto dominator : *it.second) {
+//                printf("Block %d is in the dominance frontier of Block %d\n", dominator->getStartingAddress(),
+//                       blockAddress);
+//            }
+//        }
 
         //Now we place the phi functions accordingly
         for (int variable = 0; variable < this->code->getMaxLocals(); variable++) {
@@ -623,6 +692,8 @@ public:
                 is_static = true;
         }
 
+        printf("Inside method %s\n", this->name.c_str());
+
         //Parse the descriptor to get type information
         parseDescriptor(descriptor);
 
@@ -635,8 +706,13 @@ public:
         //Link the basic blocks together
         linkBasicBlocks();
 
+        std::set<int> visitedSet;
+        printInstructions(basicBlocks[0], visitedSet);
+
         //Translate the java bytecode instructions into our type of instruction
         createSSA();
+
+        printf("\n");
     }
 
     std::string getName() const {
