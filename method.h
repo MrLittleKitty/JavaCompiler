@@ -176,7 +176,9 @@ private:
             if (current == nullptr)
                 current = new BasicBlock(instruction.getByteCodeIndex());
 
-            current->addInstruction(instruction);
+            current->addInstruction(new Instruction(instruction.getByteCodeIndex(),
+                                                    (unsigned char) instruction.getOpCode(),
+                                                    instruction.getOperands()));
             switch (instruction.getOpCode()) {
 //                case op_return:
 //                case op_invokevirtual:
@@ -237,11 +239,11 @@ private:
     void linkBasicBlocks() {
         for (auto it = basicBlocks.begin(); it != basicBlocks.end(); ++it) {
             BasicBlock *block = it->second;
-            Instruction instruction = block->getInstructions().back();
-            switch (instruction.getOpCode()) {
+            Instruction *instruction = block->getInstructions().back();
+            switch (instruction->getOpCode()) {
                 case op_goto: {
-                    int jumpToAddress = instruction.getByteCodeIndex() +
-                                        constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    int jumpToAddress = instruction->getByteCodeIndex() +
+                                        constructOffset(instruction->getOperands()[0], instruction->getOperands()[1]);
                     BasicBlock *successor = findBasicBlockWithAddress(jumpToAddress);
                     if (successor == nullptr)
                         printf("Attempted to find a basic block with address that isn't valid from goto");
@@ -266,8 +268,8 @@ private:
                 case op_ifge:
                 case op_ifgt:
                 case op_ifle: {
-                    int jumpToAddress = instruction.getByteCodeIndex() +
-                                        constructOffset(instruction.getOperands()[0], instruction.getOperands()[1]);
+                    int jumpToAddress = instruction->getByteCodeIndex() +
+                                        constructOffset(instruction->getOperands()[0], instruction->getOperands()[1]);
                     BasicBlock *successor1 = findBasicBlockWithAddress(jumpToAddress);
                     if (successor1 == nullptr)
                         printf("Attempted to find a basic block with address that isn't valid for jump");
@@ -276,7 +278,7 @@ private:
                         block->addSuccessor(successor1);
                     }
 
-                    int index = getIndexOfByteCode(instructions, instruction.getByteCodeIndex()) + 1;
+                    int index = getIndexOfByteCode(instructions, instruction->getByteCodeIndex()) + 1;
                     if (index < instructions.size()) {
                         BasicBlock *successor2 = findBasicBlockWithAddress(instructions[index].getByteCodeIndex());
                         if (successor2 == nullptr)
@@ -307,20 +309,20 @@ private:
 
     bool containsAssignment(BasicBlock *block, int variableNumber) {
         for (auto &instruction : block->getInstructions()) {
-            if (instruction.getOpCode() == op_istore_0) {
+            if (instruction->getOpCode() == op_istore_0) {
                 if (variableNumber == 0)
                     return true;
-            } else if (instruction.getOpCode() == op_istore_1) {
+            } else if (instruction->getOpCode() == op_istore_1) {
                 if (variableNumber == 1)
                     return true;
-            } else if (instruction.getOpCode() == op_istore_2) {
+            } else if (instruction->getOpCode() == op_istore_2) {
                 if (variableNumber == 2)
                     return true;
-            } else if (instruction.getOpCode() == op_istore_3) {
+            } else if (instruction->getOpCode() == op_istore_3) {
                 if (variableNumber == 3)
                     return true;
-            } else if (instruction.getOpCode() == op_istore || instruction.getOpCode() == op_iinc) {
-                int var = (int) instruction.getOperands()[0];
+            } else if (instruction->getOpCode() == op_istore || instruction->getOpCode() == op_iinc) {
+                int var = (int) instruction->getOperands()[0];
                 if (var == variableNumber)
                     return true;
             }
@@ -358,44 +360,83 @@ private:
 //#define op_istore_2 0x3d
 //#define op_istore_3 0x3e
 
-    Instruction createStoreInstruction(int varNumber, int bytecodeIndex) {
+    Instruction *createStoreInstruction(int varNumber, int bytecodeIndex) {
         if (varNumber == 0)
-            return Instruction(bytecodeIndex, op_istore_0);
+            return new Instruction(bytecodeIndex, op_istore_0);
         else if (varNumber == 1)
-            return Instruction(bytecodeIndex, op_istore_1);
+            return new Instruction(bytecodeIndex, op_istore_1);
         else if (varNumber == 2)
-            return Instruction(bytecodeIndex, op_istore_2);
+            return new Instruction(bytecodeIndex, op_istore_2);
         else if (varNumber == 3)
-            return Instruction(bytecodeIndex, op_istore_3);
+            return new Instruction(bytecodeIndex, op_istore_3);
         else {
             std::vector<unsigned char> operands;
             operands.emplace_back((unsigned char) varNumber);
-            return Instruction(bytecodeIndex, op_istore, operands);
+            return new Instruction(bytecodeIndex, op_istore, operands);
         }
     }
 
-    Instruction createLoadInstruction(int varNumber, int bytecodeIndex) {
+    Instruction *createLoadInstruction(int varNumber, int bytecodeIndex) {
         if (varNumber == 0)
-            return Instruction(bytecodeIndex, op_iload_0);
+            return new Instruction(bytecodeIndex, op_iload_0);
         else if (varNumber == 1)
-            return Instruction(bytecodeIndex, op_iload_1);
+            return new Instruction(bytecodeIndex, op_iload_1);
         else if (varNumber == 2)
-            return Instruction(bytecodeIndex, op_iload_2);
+            return new Instruction(bytecodeIndex, op_iload_2);
         else if (varNumber == 3)
-            return Instruction(bytecodeIndex, op_iload_3);
+            return new Instruction(bytecodeIndex, op_iload_3);
         else {
             std::vector<unsigned char> operands;
             operands.emplace_back((unsigned char) varNumber);
-            return Instruction(bytecodeIndex, op_iload, operands);
+            return new Instruction(bytecodeIndex, op_iload, operands);
         }
     }
 
-    void rename(BasicBlock *block, std::map<int, std::set<BasicBlock *> *> &dominanceFrontier, std::set<int> &visited,
-                int &localVarCounter) {
+    int getLHSVariable(Instruction *instruction) {
+
+    }
+
+    int getRHSVariable(Instruction *instruction) {
+
+    }
+
+    int getTopOfStack(std::map<int, std::stack<int> *> &variableStacks, int variable, int &counter) {
+        if (variableStacks.count(variable) == 0)
+            genName(variableStacks, variable, counter);
+        return variableStacks[variable]->top();
+    }
+
+    void genName(std::map<int, std::stack<int> *> &variableStacks, int variable, int &counter) {
+        if (variableStacks.count(variable) == 0)
+            variableStacks[variable] = new std::stack<int>();
+
+        variableStacks[variable]->push(counter);
+        counter++;
+    }
+
+    void rename(BasicBlock *block, std::map<int, std::set<BasicBlock *> *> &dominanceFrontier,
+                std::map<int, std::stack<int> *> &variableStacks, std::set<int> &visited, int &localVarCounter) {
         if (visited.count(block->getStartingAddress()) != 0)
             return;
 
+        for (Instruction *instruction : block->getInstructions()) {
+            if (instruction->getOpCode() != op_phi)
+                break;
 
+            PhiInstruction *phi = dynamic_cast<PhiInstruction *>(instruction);
+            genName(variableStacks, phi->getLHS(), localVarCounter);
+            phi->setLHS(getTopOfStack(variableStacks, phi->getLHS(), localVarCounter));
+        }
+
+        for (Instruction *instruction : block->getInstructions()) {
+            if (instruction->getOpCode() == op_phi)
+                continue; //Skip phis when we are processing instructions because we are processing "statements"
+
+
+            if (getLHSVariable(instruction) != -1) {
+
+            }
+        }
     }
 
     void createSSA() {
@@ -543,9 +584,7 @@ private:
                 for (BasicBlock *d : *dominanceFrontier[n->getStartingAddress()]) {
                     if (alreadyHasPhiFunc.count(d->getStartingAddress()) == 0) {
 
-                        PhiInstruction phiInst;
-                        phiInst.addToPhiFunc(n->getStartingAddress(), variable);
-                        d->getInstructions().insert(d->getInstructions().begin(), phiInst);
+                        d->getInstructions().insert(d->getInstructions().begin(), new PhiInstruction(variable));
 
                         printf("Adding phi instruction to block %d from block %d for variable %d \n",
                                d->getStartingAddress(),
@@ -562,9 +601,10 @@ private:
         }
 
         //Now we go through and rename all the variables (actually we create new ones)
-//        std::set<int> visitedRenaming;
-//        int renamingCounter = 0;
-//        rename(basicBlocks[0], dominanceFrontier, visitedRenaming, renamingCounter);
+        std::set<int> visitedRenaming;
+        std::map<int, std::stack<int> *> variableStacks;
+        int renamingCounter = 0;
+        rename(basicBlocks[0], dominanceFrontier, variableStacks, visitedRenaming, renamingCounter);
     }
 
 public:

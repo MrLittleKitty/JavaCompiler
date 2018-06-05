@@ -9,12 +9,12 @@ private:
     unsigned char opCode;
     std::vector<unsigned char> operands;
 public:
-    Instruction(int byteCodeIndex, unsigned char op_code, std::vector<unsigned char> operands)
+    explicit Instruction(int byteCodeIndex, unsigned char op_code, std::vector<unsigned char> operands)
             : byteCodeIndex(byteCodeIndex), opCode(op_code), operands(std::move(operands)) {
 
     }
 
-    Instruction(int byteCodeIndex, unsigned char op_code)
+    explicit Instruction(int byteCodeIndex, unsigned char op_code)
             : byteCodeIndex(byteCodeIndex), opCode(op_code) {
 
     }

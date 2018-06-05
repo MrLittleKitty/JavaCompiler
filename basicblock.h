@@ -10,13 +10,13 @@ private:
     int startingAddress;
     std::vector<BasicBlock *> successors;
     std::vector<BasicBlock *> predecessors;
-    std::vector<Instruction> instructions;
+    std::vector<Instruction *> instructions;
 public:
     BasicBlock(int startingAddress)
             : startingAddress(startingAddress) {
     }
 
-    void addInstruction(Instruction instruction) {
+    void addInstruction(Instruction *instruction) {
         instructions.emplace_back(instruction);
     }
 
@@ -32,7 +32,7 @@ public:
         return startingAddress;
     }
 
-    std::vector<Instruction> &getInstructions() {
+    std::vector<Instruction *> &getInstructions() {
         return instructions;
     }
 

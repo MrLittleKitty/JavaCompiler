@@ -6,25 +6,18 @@
 
 class PhiInstruction : public Instruction {
 private:
-    std::map<int, int> blockAddressToVariableNumber;
+    int lhsVariable;
+
 public:
-    PhiInstruction() : Instruction(-1, op_phi) {}
+    PhiInstruction(int variable) : Instruction(-1, op_phi), lhsVariable(variable) {}
 
-    void addToPhiFunc(int blockAddress, int variableNumber) {
-        blockAddressToVariableNumber[blockAddress] = variableNumber;
+    int getLHS() const {
+        return lhsVariable;
     }
 
-    int getVariableNumber(int blockAddress) {
-        return blockAddressToVariableNumber[blockAddress];
+    void setLHS(int LHS) {
+        lhsVariable = LHS;
     }
-
-    int getNumberOfVarsInPhiFunction() const {
-        return blockAddressToVariableNumber.size();
-    }
-
-    std::map<int, int> &viewMap() {
-        return blockAddressToVariableNumber;
-    };
 };
 
 #endif //JAVACOMPILER_PHIINSTRUCTION_H
