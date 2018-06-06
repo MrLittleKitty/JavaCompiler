@@ -398,6 +398,8 @@ private:
             return 3;
         else if (instruction->getOpCode() == op_istore)
             return instruction->getOperands()[0];
+        else
+            return -1;
     }
 
     int getRHSVariable(Instruction *instruction) {
@@ -411,6 +413,8 @@ private:
             return 3;
         else if (instruction->getOpCode() == op_iload)
             return instruction->getOperands()[0];
+        else
+            return -1;
     }
 
     std::vector<Instruction *>
@@ -449,7 +453,7 @@ private:
         return createLoadInstruction(getTopOfStack(variableStacks, oldRHS, counter), instruction->getByteCodeIndex());
     }
 
-    void rename(BasicBlock *block, std::map<int, std::set<BasicBlock *> *> &dominanceFrontier,
+    void rename(BasicBlock *block, std::map<int, std::set<BasicBlock *> *> &dominanceTree,
                 std::map<int, std::stack<int> *> &variableStacks, std::set<int> &visited, int &localVarCounter) {
         if (visited.count(block->getStartingAddress()) != 0)
             return;
@@ -484,6 +488,27 @@ private:
                 block->getInstructions()[i] = inst;
             }
         }
+
+        for (BasicBlock *s : block->getSuccessors()) {
+
+        }
+
+        for (BasicBlock *s : *dominanceTree[block->getStartingAddress()]) {
+            rename(s, dominanceTree, variableStacks, visited, localVarCounter);
+        }
+
+        for (Instruction *instruction : block->getInstructions()) {
+            if (instruction->getOpCode() == op_phi) {
+
+                PhiInstruction *phi = dynamic_cast<PhiInstruction *>(instruction);
+                variableStacks[phi->getLHS()]->pop();
+            } else {
+                int lhs = getLHSVariable(instruction);
+                if (lhs != -1) {
+                    //TODO
+                }
+            }
+        }
     }
 
     void printInstructions(BasicBlock *block, std::set<int> &visitedSet) {
@@ -497,9 +522,10 @@ private:
             auto cStr = getStringFromOpCode(inst->getOpCode()).c_str();
             if (inst->getOpCode() == op_bipush || inst->getOpCode() == op_iload
                 || inst->getOpCode() == op_istore)
-                printf("%s %d\n", cStr, inst->getOperands()[0]);
+                std::cout << getStringFromOpCode(inst->getOpCode()) << " " << (int) (inst->getOperands()[0])
+                          << std::endl;
             else
-                printf("%s\n", cStr);
+                std::cout << getStringFromOpCode(inst->getOpCode()) << std::endl;
         }
         printf("\n");
 
@@ -672,8 +698,8 @@ private:
         //Now we go through and rename all the variables (actually we create new ones)
         std::set<int> visitedRenaming;
         std::map<int, std::stack<int> *> variableStacks;
-        int renamingCounter = 0;
-        rename(basicBlocks[0], dominanceFrontier, variableStacks, visitedRenaming, renamingCounter);
+        int renamingCounter = 1;
+        rename(basicBlocks[0], dominatorTree, variableStacks, visitedRenaming, renamingCounter);
     }
 
 public:
@@ -706,11 +732,16 @@ public:
         //Link the basic blocks together
         linkBasicBlocks();
 
+        printf("Printing instructions before SSA\n");
         std::set<int> visitedSet;
         printInstructions(basicBlocks[0], visitedSet);
 
         //Translate the java bytecode instructions into our type of instruction
         createSSA();
+
+        printf("Printing instructions after SSA\n");
+        visitedSet.clear();
+        printInstructions(basicBlocks[0], visitedSet);
 
         printf("\n");
     }
