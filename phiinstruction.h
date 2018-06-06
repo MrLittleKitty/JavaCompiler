@@ -6,11 +6,12 @@
 
 class PhiInstruction : public Instruction {
 private:
+    int originalLHS;
     int lhsVariable;
     std::map<int, int> *rhsVariableMap;
 
 public:
-    PhiInstruction(int variable) : Instruction(-1, op_phi), lhsVariable(variable) {
+    PhiInstruction(int variable) : Instruction(-1, op_phi), lhsVariable(variable), originalLHS(variable) {
         rhsVariableMap = new std::map<int, int>();
     }
 
@@ -18,11 +19,15 @@ public:
         delete rhsVariableMap;
     }
 
-    int getLHS() const {
+    int getOriginalLHS() const {
+        return originalLHS;
+    }
+
+    int getCurrentLHS() const {
         return lhsVariable;
     }
 
-    void setLHS(int LHS) {
+    void setCurrentLHS(int LHS) {
         lhsVariable = LHS;
     }
 
@@ -33,6 +38,10 @@ public:
     int getRHSVariable(int incomingBlockAddress) {
         return (*rhsVariableMap)[incomingBlockAddress];
     }
+
+    std::map<int, int> *viewRHSMap() {
+        return rhsVariableMap;
+    };
 };
 
 #endif //JAVACOMPILER_PHIINSTRUCTION_H
